@@ -1,16 +1,16 @@
 # Frontend
 
-Applicazione Angular con TypeScript e Tailwind CSS che dialoga con il backend solo tramite API.
+Angular application with TypeScript and Tailwind CSS that talks to the backend only through the API.
 
-Stato: solo struttura. Il progetto Angular si crea con Angular CLI nella cartella `frontend/` al primo passo di sviluppo.
+Status: structure only. The Angular project is created with the Angular CLI in the `frontend/` folder at the first development step.
 
-## Pagine previste
+## Planned pages
 
-- Accesso e onboarding (login Google, stato "in attesa di approvazione").
-- Dashboard privata (HRV, training readiness, VO2max, training status, FTP, endurance score, sonno, battito).
-- Elenco e ricerca delle attività per tipo di sport, con dettaglio per sport.
-- Mappa con curve di livello e stili diversi per sport (MapLibre GL).
-- Segmenti per il ciclismo e confronto tra attività.
-- Premi, traguardi, badge e obiettivi.
-- Profilo e impostazioni (chiave Garmin, account Instagram e Komoot, token per Claude).
-- Amministrazione: approvazione delle registrazioni.
+- Sign-in and onboarding (Google login, "pending approval" state).
+- Private dashboard (HRV, training readiness, VO2max, training status, FTP, endurance score, sleep, heart rate).
+- Activity list and search by sport type, with a detail view per sport.
+- Map with contour lines and different styles per sport (MapLibre GL).
+- Cycling segments and comparison between activities.
+- Awards, achievements, badges and goals.
+- Profile and settings (Garmin key, Instagram and Komoot accounts, token for Claude).
+- Administration: approval of registrations.
