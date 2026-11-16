@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 
-import { activeGuard, signedOutGuard, statusGuard } from './core/session/guards';
+import { activeGuard, adminGuard, signedOutGuard, statusGuard } from './core/session/guards';
 
 // Every page is lazy-loaded: its code is downloaded only when the route opens
 export const routes: Routes = [
@@ -34,6 +34,12 @@ export const routes: Routes = [
         path: '',
         title: 'Sportlab',
         loadComponent: () => import('./features/home/home').then((m) => m.Home),
+      },
+      {
+        path: 'admin/users',
+        title: 'Utenti · Sportlab',
+        canActivate: [adminGuard],
+        loadComponent: () => import('./features/admin/admin-users').then((m) => m.AdminUsers),
       },
     ],
   },

@@ -41,6 +41,16 @@ export class FakeSession {
   readonly isActive = computed(() => this.user()?.status === 'active');
   readonly isAdmin = computed(() => this.isActive() && this.user()?.role === 'admin');
   logoutCalls = 0;
+  loadCalls = 0;
+  /** What the next load() finds on the backend; undefined keeps the current user. */
+  nextUser: User | null | undefined = undefined;
+
+  async load(): Promise<void> {
+    this.loadCalls++;
+    if (this.nextUser !== undefined) {
+      this.user.set(this.nextUser);
+    }
+  }
 
   async logout(): Promise<void> {
     this.logoutCalls++;

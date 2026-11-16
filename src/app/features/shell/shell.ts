@@ -12,6 +12,7 @@ import { LogoutButton } from '../../shared/logout-button';
 })
 export class Shell {
   private readonly session = inject(SessionService);
+  protected readonly isAdmin = this.session.isAdmin;
   protected readonly name = computed(() => {
     const user = this.session.user();
     return user?.display_name || user?.email;
