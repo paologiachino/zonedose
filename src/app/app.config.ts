@@ -5,7 +5,7 @@ import {
   provideAppInitializer,
   provideBrowserGlobalErrorListeners,
 } from '@angular/core';
-import { provideRouter } from '@angular/router';
+import { provideRouter, withComponentInputBinding } from '@angular/router';
 
 import { routes } from './app.routes';
 import { csrfInterceptor } from './core/http/csrf.interceptor';
@@ -15,7 +15,8 @@ import { SessionService } from './core/session/session.service';
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
-    provideRouter(routes),
+    // Component inputs receive route parameters, e.g. ?error= on the login page
+    provideRouter(routes, withComponentInputBinding()),
     // The first interceptor is the outermost: requests repeated after a refresh
     // still pass through the CSRF one
     provideHttpClient(withInterceptors([refreshInterceptor, csrfInterceptor])),

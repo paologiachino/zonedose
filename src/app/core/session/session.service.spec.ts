@@ -1,6 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
+import { provideRouter, Router } from '@angular/router';
 
 import { SessionService } from './session.service';
 import { User } from './user';
@@ -16,13 +17,15 @@ const ACTIVE_USER: User = {
 describe('SessionService', () => {
   let session: SessionService;
   let backend: HttpTestingController;
+  let navigate: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
     });
     session = TestBed.inject(SessionService);
     backend = TestBed.inject(HttpTestingController);
+    navigate = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
   });
 
   afterEach(() => backend.verify());
@@ -66,7 +69,7 @@ describe('SessionService', () => {
     expect(session.user()).toBeNull();
   });
 
-  it('logs out on the backend and forgets the user', async () => {
+  it('logs out on the backend, forgets the user and goes to the login page', async () => {
     await loadWith(ACTIVE_USER);
     const out = session.logout();
     const req = backend.expectOne('/api/auth/logout');
@@ -74,13 +77,27 @@ describe('SessionService', () => {
     req.flush(null, { status: 204, statusText: 'No Content' });
     await out;
     expect(session.user()).toBeNull();
+    expect(navigate).toHaveBeenCalledWith('/login');
   });
 
-  it('forgets the user even when the logout request fails', async () => {
+  it('signs out locally even when the logout request fails', async () => {
     await loadWith(ACTIVE_USER);
     const out = session.logout();
     backend.expectOne('/api/auth/logout').flush(null, { status: 502, statusText: 'Bad Gateway' });
-    await expect(out).rejects.toBeTruthy();
+    await out;
     expect(session.user()).toBeNull();
+    expect(navigate).toHaveBeenCalledWith('/login');
+  });
+
+  it('sends a signed-in user to the login page when the session ends', async () => {
+    await loadWith(ACTIVE_USER);
+    session.clear();
+    expect(session.user()).toBeNull();
+    expect(navigate).toHaveBeenCalledWith('/login');
+  });
+
+  it('does not navigate when nobody was signed in', () => {
+    session.clear();
+    expect(navigate).not.toHaveBeenCalled();
   });
 });

@@ -1,0 +1,19 @@
+<main class="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-6 p-6">
+  <h1 class="text-3xl font-semibold">Sportlab</h1>
+  <p class="text-slate-600">Accedi con il tuo account Google per vedere le tue attività.</p>
+
+  @if (errorMessage(); as message) {
+    <p role="alert" class="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+      {{ message }}
+    </p>
+  }
+
+  <!-- A real page navigation, not an API call: the browser follows the
+       redirects to Google and back, and comes back to / signed in -->
+  <a
+    href="/api/auth/google/login"
+    class="rounded-md bg-slate-900 px-4 py-2 text-center font-medium text-white hover:bg-slate-700"
+  >
+    Accedi con Google
+  </a>
+</main>

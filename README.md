@@ -2,7 +2,7 @@
 
 Angular application with TypeScript and Tailwind CSS that talks to the backend only through the API. Plan of the first step: [docs/frontend-step-1.md](../docs/frontend-step-1.md).
 
-Status: Angular project with a placeholder home page.
+Status: session handling, sign-in page, waiting pages for pending and disabled accounts, placeholder home page.
 
 ## Requirements
 
@@ -33,6 +33,8 @@ npm run build           # production build in dist/sportlab
 ## Same address as the API
 
 `npm start` forwards every `/api/...` request to the backend on `http://localhost:8000` (`proxy.conf.json`). The browser sees one site, `http://localhost:4200`, so the backend's `SameSite=Strict` session cookies work without CORS. In staging and production the reverse proxy does the same job.
+
+To sign in through the frontend, the backend must know that the browser uses `http://localhost:4200`: set `PUBLIC_URL=http://localhost:4200` in `.env` (or in the shell that starts the backend), and register `http://localhost:4200/api/auth/google/callback` in the development Google client. Google then sends the browser back to the Angular server, which forwards the callback to the backend.
 
 ## Structure
 

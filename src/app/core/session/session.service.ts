@@ -1,5 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
 import { User } from './user';
@@ -14,6 +15,7 @@ import { User } from './user';
 @Injectable({ providedIn: 'root' })
 export class SessionService {
   private readonly http = inject(HttpClient);
+  private readonly router = inject(Router);
   private readonly current = signal<User | null>(null);
 
   /** The signed-in user, or null when nobody is signed in. */
@@ -34,17 +36,30 @@ export class SessionService {
     }
   }
 
-  /** Ends the session on the backend; the user is signed out here in any case. */
+  /**
+   * Ends the session on the backend and goes to the login page. The user is
+   * signed out here even if the backend cannot be reached.
+   */
   async logout(): Promise<void> {
     try {
       await firstValueFrom(this.http.post('/api/auth/logout', null));
-    } finally {
-      this.current.set(null);
+    } catch {
+      // Nothing more to do: the page forgets the user anyway
     }
+    this.current.set(null);
+    await this.router.navigateByUrl('/login');
   }
 
-  /** Forgets the user locally, when the backend says the session is over. */
+  /**
+   * Forgets the user, e.g. when the session ended. Only someone who was signed
+   * in is sent to the login page: for a visitor who never was, the route guards
+   * already decide, and a redirect here would drop /login?error=... at startup.
+   */
   clear(): void {
+    if (this.current() === null) {
+      return;
+    }
     this.current.set(null);
+    void this.router.navigateByUrl('/login');
   }
 }
