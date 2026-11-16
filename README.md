@@ -2,7 +2,7 @@
 
 Angular application with TypeScript and Tailwind CSS that talks to the backend only through the API. Plan of the first step: [docs/frontend-step-1.md](../docs/frontend-step-1.md).
 
-Status: session handling, sign-in page, waiting pages for pending and disabled accounts, placeholder home page.
+Status: frontend step 1 done: sign-in with Google, waiting pages for pending and disabled accounts, user administration for administrators, silent session renewal; placeholder home page.
 
 ## Requirements
 
@@ -41,9 +41,10 @@ To sign in through the frontend, the backend must know that the browser uses `ht
 ```
 src/app/
   app.ts, app.routes.ts, app.config.ts   root component, routes, application providers
-  core/       session, API access, interceptors, guards (from the next pull requests)
-  features/   one folder per area, each loaded only when its route opens
-  shared/     small reusable components
+  core/       session, interceptors (CSRF header, silent refresh), route guards, confirmation
+  features/   one folder per area (auth, home, shell, admin), each loaded only when its route opens
+  shared/     small reusable components (logout button)
+src/testing/  test helpers: synthetic users and a fake session
 ```
 
 ## Planned pages
