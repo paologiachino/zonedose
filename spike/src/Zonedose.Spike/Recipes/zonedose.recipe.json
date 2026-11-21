@@ -1,0 +1,45 @@
+{
+  "name": "Zonedose",
+  "displayName": "Zonedose (spike)",
+  "description": "Phase 0 spike tenant: users, Google sign-in, roles and the spike module.",
+  "author": "Zonedose",
+  "website": "",
+  "version": "0.0.1",
+  "issetuprecipe": true,
+  "categories": [ "spike" ],
+  "tags": [],
+  "steps": [
+    {
+      "name": "feature",
+      "enable": [
+        "OrchardCore.Settings",
+        "OrchardCore.Admin",
+        "OrchardCore.Themes",
+        "TheAdmin",
+        "SafeMode",
+        "OrchardCore.Users",
+        "OrchardCore.Users.ExternalAuthentication",
+        "OrchardCore.Roles",
+        "OrchardCore.Google.GoogleAuthentication",
+        "Zonedose.Spike"
+      ]
+    },
+    {
+      "name": "themes",
+      "admin": "TheAdmin",
+      "site": "SafeMode"
+    },
+    {
+      "name": "settings",
+      "ExternalRegistrationSettings": {
+        "DisableNewRegistrations": false,
+        "NoPassword": true,
+        "NoUsername": true,
+        "NoEmail": true
+      },
+      "ExternalLoginSettings": {
+        "UseExternalProviderIfOnlyOneDefined": true
+      }
+    }
+  ]
+}

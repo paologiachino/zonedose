@@ -1,0 +1,42 @@
+# Phase 0 spike only (throwaway). Orchard runs from the official .NET 10 SDK image,
+# nothing is installed on the host.
+name: zonedose-spike
+
+services:
+  db:
+    image: postgis/postgis:17-3.7
+    platform: linux/amd64
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set in .env}
+      ZONEDOSE_APP_PASSWORD: ${ZONEDOSE_APP_PASSWORD:?set in .env}
+      ZONEDOSE_MIGRATOR_PASSWORD: ${ZONEDOSE_MIGRATOR_PASSWORD:?set in .env}
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/10_zonedose.sh:/docker-entrypoint-initdb.d/20_zonedose.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d zonedose_spike"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  web:
+    image: mcr.microsoft.com/dotnet/sdk:10.0
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+    command: ["/src/run.sh"]
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - ./:/src
+      - nuget:/root/.nuget/packages
+
+volumes:
+  pgdata:
+  nuget:
