@@ -52,6 +52,8 @@ Each phase ends with a pull request or a short decision record, in small steps, 
 
 ### Phase 1: `zonedose` repository skeleton
 
+Status: done (2026-11-21). Not yet in place: branch protection on `main` (a manual GitHub setting).
+
 - Orchard solution (.NET 10), Dockerfile, CI (build, tests, format, dependency and secret scan), `CLAUDE.md` with the same rules as the other repositories, AGPL-3.0.
 - Orchard configuration as code (recipes), no manual setup steps.
 - Content types: modelled in the admin of a local instance, exported with a deployment plan (definition steps only) and committed to the tenant recipe; staging and production get them only from the recipe (workflow verified in the spike).
