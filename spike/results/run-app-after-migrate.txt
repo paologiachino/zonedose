@@ -1,0 +1,18 @@
+PASS  anonymous /api/auth/me (401)
+PASS  POST without X-Requested-With (403)
+PASS  new user is pending (pending)
+PASS  pending user cannot read activities (403)
+PASS  ADMIN_EMAIL user is admin (admin)
+PASS  pending user cannot approve herself (403)
+PASS  admin approves alice (200)
+PASS  alice adds activity (PostGIS point) (200)
+PASS  alice sees only her activities (0)
+INFO  alice list: [{"id":5,"name":"Aosta run","lon":7.32,"lat":45.737,"distanceToOriginKm":5117.620613729439}]
+INFO  rls probe:  {"dbRole":"zonedose_app","visibleAsMe":1,"visibleWithNoUser":0}
+PASS  disabled user cannot read activities (403)
+INFO  disabled user's existing cookie on /me: 200
+PASS  zonedose cookie not valid on blog tenant admin (302)
+PASS  refresh while signed in (204)
+PASS  me after logout (401)
+PASS  refresh after logout (401)
+PASS  Google login redirects to Google (accounts.google.com)
