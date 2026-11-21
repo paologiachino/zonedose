@@ -6,7 +6,9 @@
   "website": "",
   "version": "0.0.1",
   "issetuprecipe": true,
-  "categories": [ "spike" ],
+  "categories": [
+    "spike"
+  ],
   "tags": [],
   "steps": [
     {
@@ -21,6 +23,16 @@
         "OrchardCore.Users.ExternalAuthentication",
         "OrchardCore.Roles",
         "OrchardCore.Google.GoogleAuthentication",
+        "OrchardCore.Contents",
+        "OrchardCore.ContentTypes",
+        "OrchardCore.ContentFields",
+        "OrchardCore.Title",
+        "OrchardCore.Html",
+        "OrchardCore.Navigation",
+        "OrchardCore.Deployment",
+        "OrchardCore.Media",
+        "OrchardCore.Markdown",
+        "OrchardCore.Lists",
         "Zonedose.Spike"
       ]
     },
@@ -38,7 +50,7 @@
         "NoEmail": true
       },
       "ExternalLoginSettings": {
-        "UseExternalProviderIfOnlyOneDefined": true
+        "UseExternalProviderIfOnlyOneDefined": false
       }
     }
   ]

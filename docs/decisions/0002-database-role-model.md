@@ -15,6 +15,7 @@ Keep the split, for Orchard's tables too.
 - **Migrate step**: setup and every Orchard or module migration run with the migrator connection, as a one-off job before the new version serves traffic (like today's Alembic job). The application then runs with the app role, which needs no DDL at startup.
 - The deploy must fail if a migration is still pending: Orchard under the app role logs a failed migration but keeps serving with the old schema.
 - Personal data (activities, tracks, Garmin keys) lives in module-owned relational tables, created by module migrations with `user_id`, RLS enabled and a policy on `current_setting('zonedose.user_id', true)`. Every query sets it with `set_config(..., true)` inside the transaction. Content items (YesSql documents) are only for non-personal content.
+- Editorial content types can be created and edited from the Orchard admin under the app role (definitions are documents, no DDL; verified in the spike). New Orchard features are enabled only through recipes, applied in the migrate step, because their migrations create tables.
 - Modules access PostGIS through their own `NpgsqlDataSource` with NetTopologySuite, built from the tenant connection string.
 
 ## Consequences
