@@ -29,6 +29,9 @@ services:
     env_file: .env
     environment:
       ASPNETCORE_ENVIRONMENT: Development
+      # Chosen by start.sh (migrator for setup and migrations, app otherwise),
+      # never by .env: a stale value there must not decide which role runs
+      DB_ROLE: ${DB_ROLE:-app}
       DOTNET_CLI_TELEMETRY_OPTOUT: "1"
     command: ["/src/run.sh"]
     ports:

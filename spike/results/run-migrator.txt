@@ -16,3 +16,5 @@ PASS  refresh while signed in (204)
 PASS  me after logout (401)
 PASS  refresh after logout (401)
 PASS  Google login redirects to Google (accounts.google.com)
+
+All checks passed

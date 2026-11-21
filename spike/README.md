@@ -17,14 +17,33 @@ Run on 2026-11-21 with Orchard Core 3.0.1, .NET 10 (official `mcr.microsoft.com/
 
 ## How to run
 
+Once, from `spike/`: copy the example file, then replace every `CHANGE_ME` in `.env` (any throwaway values; Google keys are optional, only the real Google sign-in needs them).
+
 ```sh
-cp .env.example .env        # replace every CHANGE_ME; DB_ROLE=migrator
-./reset.sh                  # fresh database, set up all tenants
-./test.sh m1                # checks with the migrator connection
-# set DB_ROLE=app in .env, then:
-docker compose up -d --force-recreate web
-./test.sh a1                # same checks with the app role
+cp .env.example .env
 ```
+
+Then each step on its own. `reset.sh` deletes the spike database, sets up all tenants with the migrator role and waits until they answer (the first start restores packages and compiles, a few minutes).
+
+```sh
+./reset.sh
+```
+
+```sh
+./test.sh m1
+```
+
+`start.sh` restarts Orchard with the given role; `app` is normal running. The test suffix (`m1`, `a1`) makes the synthetic users new on each run.
+
+```sh
+./start.sh app
+```
+
+```sh
+./test.sh a1
+```
+
+The database role is chosen only by these scripts, never by `.env`. To see a migration applied, restart with `./start.sh migrator`, then `./start.sh app` again.
 
 `/api/auth/dev/register` (Development only) stands in for the Google round trip: it calls the same `UserService.RegisterAsync` that Orchard's Google auto-registration calls, or signs in an existing user.
 
