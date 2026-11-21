@@ -1,25 +1,30 @@
 #!/bin/sh
 # Spike checks against the running stack. Usage: ./test.sh [suffix]
-# Every user is synthetic (example.test); the admin is whatever ADMIN_EMAIL says.
-set -u
+# The suffix makes the synthetic users new on each run (alice<suffix>@example.test).
+# The admin is whatever ADMIN_EMAIL says in .env.
 cd "$(dirname "$0")"
 S=${1:-}
 B=http://127.0.0.1:8000; H="Host: localhost"; J='Content-Type: application/json'; X='X-Requested-With: XMLHttpRequest'
 ADMIN=$(grep ^ADMIN_EMAIL .env | cut -d= -f2)
+if [ "$(curl -s -o /dev/null -w '%{http_code}' -m 10 -H "$H" $B/api/auth/me)" != "401" ]; then
+  echo "Orchard is not ready on $B: run ./reset.sh or ./start.sh first" >&2
+  exit 1
+fi
 T=$(mktemp -d)
+trap 'rm -rf "$T"' EXIT
 code() { curl -s -o /dev/null -w "%{http_code}" "$@"; }
 reg() { curl -s -c "$T/$1" -H "$H" -H "$J" -H "$X" -X POST $B/api/auth/dev/register -d "{\"email\":\"$2\"}"; }
-idof() { curl -s -b "$T/$1" -H "$H" $B/api/auth/me | sed 's/.*"id":"\([^"]*\)".*/\1/'; }
-setstatus() { code -b "$T/admin" -H "$H" -H "$J" -H "$X" -X POST $B/api/admin/users/$1/status -d "{\"status\":\"$2\"}"; }
-check() { if [ "$2" = "$3" ]; then echo "PASS  $1 ($3)"; else echo "FAIL  $1 (expected $2, got $3)"; fi; }
+idof() { curl -s -b "$T/$1" -H "$H" $B/api/auth/me | sed -n 's/.*"id":"\([^"]*\)".*/\1/p'; }
+setstatus() { code -b "$T/admin" -H "$H" -H "$J" -H "$X" -X POST "$B/api/admin/users/${1:-missing}/status" -d "{\"status\":\"$2\"}"; }
+FAILS=0
+check() { if [ "$2" = "$3" ]; then echo "PASS  $1 ($3)"; else echo "FAIL  $1 (expected $2, got $3)"; FAILS=$((FAILS + 1)); fi; }
 
 check "anonymous /api/auth/me" 401 "$(code -H "$H" $B/api/auth/me)"
 check "POST without X-Requested-With" 403 "$(code -H "$H" -H "$J" -X POST $B/api/auth/dev/register -d '{"email":"x@example.test"}')"
 reg alice "alice$S@example.test" >/dev/null
 check "new user is pending" pending "$(curl -s -b "$T/alice" -H "$H" $B/api/auth/me | sed 's/.*"status":"\([a-z]*\)".*/\1/')"
 check "pending user cannot read activities" 403 "$(code -b "$T/alice" -H "$H" $B/api/activities)"
-reg admin "$ADMIN" >/dev/null 2>&1
-[ -s "$T/admin" ] && grep -q orchauth "$T/admin" || curl -s -o /dev/null -c "$T/admin" -H "$H" -H "$J" -H "$X" -X POST $B/api/auth/dev/register -d "{\"email\":\"$ADMIN\"}"
+reg admin "$ADMIN" >/dev/null
 check "ADMIN_EMAIL user is admin" admin "$(curl -s -b "$T/admin" -H "$H" $B/api/auth/me | sed 's/.*"role":"\([a-z]*\)".*/\1/')"
 A=$(idof alice)
 check "pending user cannot approve herself" 403 "$(code -b "$T/alice" -H "$H" -H "$J" -H "$X" -X POST $B/api/admin/users/$A/status -d '{"status":"active"}')"
@@ -39,4 +44,6 @@ curl -s -o /dev/null -b "$T/alice" -c "$T/alice-out" -H "$H" -H "$X" -X POST $B/
 check "me after logout" 401 "$(code -b "$T/alice-out" -H "$H" $B/api/auth/me)"
 check "refresh after logout" 401 "$(code -b "$T/alice-out" -H "$H" -H "$X" -X POST $B/api/auth/refresh)"
 check "Google login redirects to Google" accounts.google.com "$(curl -s -o /dev/null -w '%{redirect_url}' -H "$H" $B/api/auth/google/login | cut -d/ -f3)"
-rm -rf "$T"
+echo
+[ $FAILS -eq 0 ] && echo "All checks passed" || echo "$FAILS check(s) failed"
+exit $FAILS
