@@ -12,7 +12,7 @@ describe('RefreshLock', () => {
     const result = await TestBed.inject(RefreshLock).runExclusive(async () => 'done');
 
     expect(result).toBe('done');
-    expect(request).toHaveBeenCalledWith('sportlab-refresh', expect.any(Function));
+    expect(request).toHaveBeenCalledWith('zonedose-refresh', expect.any(Function));
   });
 
   describe('without the Web Locks API', () => {

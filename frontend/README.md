@@ -1,13 +1,13 @@
 # Frontend
 
-Angular application with TypeScript and Tailwind CSS that talks to the backend only through the API. Plan of the first step: [docs/frontend-step-1.md](../docs/frontend-step-1.md).
+Angular application with TypeScript and Tailwind CSS that talks to the Zonedose backend (Orchard Core, in `../src`) only through the API. It was built in the Sportlab repository and moved here, with its history, in phase 4 of the [migration plan](../docs/orchard-migration-plan.md); its first design is Sportlab's `docs/frontend-step-1.md`.
 
-Status: frontend step 1 done: sign-in with Google, waiting pages for pending and disabled accounts, user administration for administrators, silent session renewal; placeholder home page.
+Status: sign-in with Google, waiting pages for pending and disabled accounts, user administration for administrators, silent session renewal; placeholder home page.
 
 ## Requirements
 
 - Node.js 26 (the version is in `.nvmrc`; with nvm, `nvm use` in this folder).
-- For pages that call the API: the Zonedose backend (Orchard Core) running on `http://localhost:8080`, from the [zonedose](https://github.com/paologiachino/zonedose) repository (`docker compose up -d web` there). The FastAPI backend in `backend/` is paused during the migration (phase 4 of the Zonedose plan); to use it instead, point `proxy.conf.json` back to `http://localhost:8000`.
+- For pages that call the API: the backend running on `http://localhost:8080` (`docker compose up -d web` at the repository root, see the main README).
 
 ## Commands
 
@@ -20,7 +20,7 @@ npm test                # unit tests (Vitest), in watch mode in a terminal
 npm test -- --watch=false   # unit tests once, as CI runs them
 npm run lint            # ESLint, required before a pull request
 npm run format:check    # Prettier check; npm run format fixes the files
-npm run build           # production build in dist/sportlab
+npm run build           # production build in dist/zonedose
 ```
 
 ## How it is built
@@ -34,7 +34,7 @@ npm run build           # production build in dist/sportlab
 
 `npm start` forwards every `/api/...` request to the Zonedose backend on `http://localhost:8080` (`proxy.conf.json`). The browser sees one site, `http://localhost:4200`, so the backend's `SameSite=Strict` session cookie works without CORS. In staging and production the reverse proxy does the same job.
 
-The proxy keeps the browser's `Host` header (`changeOrigin: false`): the backend builds the Google redirect URI from it, so Google sends the browser back to `http://localhost:4200/api/auth/google/callback`, which the proxy forwards to the backend. Register that URI in the development Google client and set the client in the zonedose `.env` (see `docs/google-oauth.md` in the zonedose repository).
+The proxy keeps the browser's `Host` header (`changeOrigin: false`): the backend builds the Google redirect URI from it, so Google sends the browser back to `http://localhost:4200/api/auth/google/callback`, which the proxy forwards to the backend. Register that URI in the development Google client and set the client in the repository's `.env` (see [docs/google-oauth.md](../docs/google-oauth.md)).
 
 ## Structure
 

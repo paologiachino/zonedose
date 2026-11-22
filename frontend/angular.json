@@ -8,7 +8,7 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "sportlab": {
+    "zonedose": {
       "projectType": "application",
       "schematics": {},
       "root": "",
@@ -59,10 +59,10 @@
           },
           "configurations": {
             "production": {
-              "buildTarget": "sportlab:build:production"
+              "buildTarget": "zonedose:build:production"
             },
             "development": {
-              "buildTarget": "sportlab:build:development"
+              "buildTarget": "zonedose:build:development"
             }
           },
           "defaultConfiguration": "development"

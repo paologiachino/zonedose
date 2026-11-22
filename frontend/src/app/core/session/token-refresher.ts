@@ -13,7 +13,7 @@ export const CLOCK = new InjectionToken<() => number>('CLOCK', {
 });
 
 /** localStorage key with the time of the last successful refresh, shared by the tabs. */
-export const LAST_REFRESH_KEY = 'sportlab.lastRefreshAt';
+export const LAST_REFRESH_KEY = 'zonedose.lastRefreshAt';
 
 /**
  * Renews the session cookies when the access token has expired.

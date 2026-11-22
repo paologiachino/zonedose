@@ -1,6 +1,6 @@
 import { HttpInterceptorFn } from '@angular/common/http';
 
-/** Header the backend requires on state-changing requests (backend/app/core/csrf.py). */
+/** Header the backend requires on state-changing requests (the CSRF check in src/Modules/Zonedose.Platform/Startup.cs). */
 export const CSRF_HEADER = 'X-Requested-With';
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);

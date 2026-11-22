@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 
-const LOCK_NAME = 'sportlab-refresh';
+const LOCK_NAME = 'zonedose-refresh';
 
 /**
  * Runs one session refresh at a time, across every tab of the site.

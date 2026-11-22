@@ -83,6 +83,31 @@ jobs:
       - name: Test
         run: dotnet test --solution Zonedose.slnx --no-build -c Release
 
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          # Same Node.js version as local development
+          node-version-file: frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install
+        run: npm ci
+      - name: Dependency audit
+        run: npm audit --audit-level=high
+      - name: Style check (ESLint, Prettier)
+        run: npm run lint && npm run format:check
+      - name: Test
+        run: npm test -- --watch=false
+      - name: Build
+        run: npm run build
+
   image:
     name: Docker image
     runs-on: ubuntu-latest

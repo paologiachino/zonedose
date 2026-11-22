@@ -14,7 +14,7 @@ export interface AdminUser extends User {
 
 const BASE = '/api/admin/users';
 
-/** Calls to the user administration API (backend/app/api/admin.py). */
+/** Calls to the user administration API (src/Modules/Zonedose.Accounts/Controllers/AdminUsersController.cs). */
 @Injectable({ providedIn: 'root' })
 export class AdminUsersService {
   private readonly http = inject(HttpClient);

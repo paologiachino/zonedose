@@ -4,7 +4,7 @@ Zonedose is a multi-user web site for sports activities and health data. Each pe
 
 It is built for personal and family use on a homelab, and designed so that it can become a public site later.
 
-> Status: phase 3 of the [migration plan](docs/orchard-migration-plan.md) done: Google sign-in, account approval, server-side sessions and user administration, with the same API contract as Sportlab. Next: phase 4, the Angular frontend on this API.
+> Status: phase 4 of the [migration plan](docs/orchard-migration-plan.md) done: the Angular frontend lives in this repository and runs on the Orchard backend, with Google sign-in, account approval, server-side sessions and user administration. Next: phase 5, the Garmin module.
 
 ## What it does
 
@@ -27,7 +27,7 @@ Zonedose runs on [Orchard Core](https://orchardcore.net/) (headless, .NET 10) wi
 | Blog | to come | phase 7 |
 | Recipes | to come | phase 7 |
 
-The project was born as Sportlab (FastAPI and Angular, in the `sportlab` repository). This repository is its new home: the Angular frontend is reused, and the backend moves to Orchard Core step by step, following the [migration plan](docs/orchard-migration-plan.md) and the [decision records](docs/decisions/).
+The project was born as Sportlab (FastAPI and Angular, in the `sportlab` repository). Zonedose replaces it entirely: the Angular frontend moved here with its history, the backend is rebuilt on Orchard Core, and the `sportlab` repository is archived at the cut-over. The steps follow the [migration plan](docs/orchard-migration-plan.md) and the [decision records](docs/decisions/).
 
 ## Stack
 
@@ -35,7 +35,7 @@ The project was born as Sportlab (FastAPI and Angular, in the `sportlab` reposit
 | --- | --- |
 | Platform and API | Orchard Core 3.0 on .NET 10, custom modules |
 | Database | PostgreSQL with PostGIS (one database, tenants by table prefix) |
-| Frontend | Angular, TypeScript, Tailwind CSS (in the `sportlab` repository for now) |
+| Frontend | Angular, TypeScript, Tailwind CSS, in `frontend/` |
 | Maps | MapLibre GL |
 | Access for Claude | MCP server (read-only at first) |
 | Containers and CI | Docker, GitHub Actions |
@@ -48,15 +48,16 @@ The project was born as Sportlab (FastAPI and Angular, in the `sportlab` reposit
 | 1 | Repository skeleton, CI, production image | done |
 | 2 | Platform base: migrate step, roles, admin hostnames | done |
 | 3 | Authentication: Google, approval, roles, sessions | done |
-| 4 | Angular frontend on the new API | next |
-| 5 | Garmin module: keys, sync, tracks, comparisons | |
+| 4 | Angular frontend on the new API, moved into this repository | done |
+| 5 | Garmin module: keys, sync, tracks, comparisons | next |
 | 6 | Staging and production on the homelab | |
-| 7 | Cut-over from Sportlab, then blog and recipes | |
+| 7 | Cut-over: archive the `sportlab` repository; then blog and recipes | |
 
 ## Layout
 
 | Path | What |
 | --- | --- |
+| `frontend/` | The Angular application (session, sign-in, user administration), [its README](frontend/README.md). |
 | `src/Zonedose.Web` | Orchard host. Tenant layout in `appsettings.json`; secrets and hostnames from `ZONEDOSE_*` variables. |
 | `src/Modules/Zonedose.Platform` | Shared module: `/api/health`, CSRF check, API-only site hosts, and the setup recipes (`zonedose-host`, `zonedose`). |
 | `src/Modules/Zonedose.Accounts` | Google sign-in, account approval, server-side sessions, `/api/auth/*` and `/api/admin/users`. |
@@ -113,15 +114,25 @@ docker compose up -d web
 
 Compose runs the `migrate` service first (setup and migrations with the migrator role), then `web` with the app role. The first start restores packages and compiles (a few minutes). Then `http://platform.localhost:8080/api/health` and `http://localhost:8080/api/health` answer `{"status":"ok",...}`. The admin of the sports site is at `http://admin.localhost:8080/Admin`, the platform's at `http://platform.localhost:8080/Admin`, with the user `setup-admin` and `ZONEDOSE_SETUP_ADMIN_PASSWORD`. After pulling changes that add migrations or features, run `docker compose up -d --force-recreate migrate web`.
 
+### With the frontend
+
+Requirements: Node.js (the version in `frontend/.nvmrc`). With Orchard running as above:
+
+```sh
+cd frontend && npm ci && npm start
+```
+
+Open `http://localhost:4200`. The Angular development server forwards `/api` to Orchard on port 8080 and keeps the browser's host, so the session cookie and the Google redirect work as in production. Google sign-in needs `ZONEDOSE_GOOGLE_CLIENT_ID`, `ZONEDOSE_GOOGLE_CLIENT_SECRET` and `ZONEDOSE_ADMIN_EMAIL` in `.env` ([setup](docs/google-oauth.md)).
+
 Tests, style checks and the image build are described in [CLAUDE.md](CLAUDE.md#commands).
 
 ## Continuous integration
 
-Every pull request runs: structure check, NuGet dependency audit (a vulnerable package fails the restore), `dotnet format`, build with warnings as errors, integration tests against PostGIS (migrate step with the migrator role, then the application with the app role), the Docker image build with a smoke test of the whole release procedure, and a gitleaks secret scan. The same checks run weekly to catch newly published vulnerabilities.
+Every pull request runs: structure check, NuGet and npm dependency audits, `dotnet format`, ESLint and Prettier, build with warnings as errors, frontend unit tests (Vitest) and build, integration tests against PostGIS (migrate step with the migrator role, then the application with the app role), the Docker image build with a smoke test of the whole release procedure, and a gitleaks secret scan. The same checks run weekly to catch newly published vulnerabilities.
 
 ## Branches
 
-Work happens on `feature/...`, `fix/...` or `chore/...` branches and reaches `staging` through a pull request; `staging` reaches `main` through another pull request. Both are protected by GitHub rulesets: the four CI checks must pass, `main` also needs an approval, and force pushes and deletion are blocked. Deploys from these branches arrive in phase 6.
+Work happens on `feature/...`, `fix/...` or `chore/...` branches and reaches `staging` through a pull request; `staging` reaches `main` through another pull request. Both are protected by GitHub rulesets: the CI checks must pass, `main` also needs an approval, and force pushes and deletion are blocked. Deploys from these branches arrive in phase 6.
 
 ## Licence
 

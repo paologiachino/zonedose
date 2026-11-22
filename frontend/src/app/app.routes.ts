@@ -6,20 +6,20 @@ import { activeGuard, adminGuard, signedOutGuard, statusGuard } from './core/ses
 export const routes: Routes = [
   {
     path: 'login',
-    title: 'Accedi · Sportlab',
+    title: 'Accedi · Zonedose',
     canActivate: [signedOutGuard],
     loadComponent: () => import('./features/auth/login').then((m) => m.Login),
   },
   {
     path: 'pending',
-    title: 'In attesa di approvazione · Sportlab',
+    title: 'In attesa di approvazione · Zonedose',
     canActivate: [statusGuard('pending')],
     data: { status: 'pending' },
     loadComponent: () => import('./features/auth/account-status').then((m) => m.AccountStatus),
   },
   {
     path: 'disabled',
-    title: 'Account disattivato · Sportlab',
+    title: 'Account disattivato · Zonedose',
     canActivate: [statusGuard('disabled')],
     data: { status: 'disabled' },
     loadComponent: () => import('./features/auth/account-status').then((m) => m.AccountStatus),
@@ -32,12 +32,12 @@ export const routes: Routes = [
     children: [
       {
         path: '',
-        title: 'Sportlab',
+        title: 'Zonedose',
         loadComponent: () => import('./features/home/home').then((m) => m.Home),
       },
       {
         path: 'admin/users',
-        title: 'Utenti · Sportlab',
+        title: 'Utenti · Zonedose',
         canActivate: [adminGuard],
         loadComponent: () => import('./features/admin/admin-users').then((m) => m.AdminUsers),
       },
