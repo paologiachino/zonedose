@@ -1,8 +1,57 @@
 # Zonedose
 
-A multi-site platform built on [Orchard Core](https://orchardcore.net/) (headless, .NET 10) with PostgreSQL/PostGIS. Each site is an Orchard tenant: the first is the Zonedose sports site (activities and health data from Garmin, formerly Sportlab); a blog and a recipes site come later.
+Zonedose is a multi-user web site for sports activities and health data. Each person connects their Garmin account; activities, tracks and health metrics are downloaded into a private database and shown with dashboards, maps and goals. The same data is available to Claude through an MCP server, for questions, suggestions and training planning.
+
+It is built for personal and family use on a homelab, and designed so that it can become a public site later.
 
 > Status: phase 2 of the [migration plan](docs/orchard-migration-plan.md), platform base: tenants from configuration and recipes, a separate migrate step with the migrator role, the application on the data-only app role, and each tenant's admin on its own hostname. Authentication arrives in phase 3.
+
+## What it does
+
+The goal of the project; most of it is still to build (see the roadmap below).
+
+- **Activities and health data from Garmin**: runs, rides, hikes and their tracks, plus health metrics, synchronised per person (from phase 5).
+- **Maps**: tracks on MapLibre GL maps with contour lines from elevation data, stored and queried with PostGIS.
+- **Dashboards and goals**: trends over time, comparisons between activities, personal goals.
+- **Access for Claude**: a read-only MCP server on top of the same API, so a person can ask an assistant about their own data.
+- **Private by design**: sign-in with Google only, and every new account stays pending until an administrator approves it. Each person sees only their own data, enforced twice: by the application and by Row-Level Security in PostgreSQL. Garmin keys are stored encrypted, and development and staging use synthetic data only.
+
+## One platform, several sites
+
+Zonedose runs on [Orchard Core](https://orchardcore.net/) (headless, .NET 10) with PostgreSQL/PostGIS. Each site is an Orchard tenant with its own users, content and administration, sharing one deployment, one database and the same release procedure:
+
+| Site | Tenant | Status |
+| --- | --- | --- |
+| Zonedose, the sports site | `zonedose` | in progress |
+| Platform administration | `Default` | in place |
+| Blog | to come | phase 7 |
+| Recipes | to come | phase 7 |
+
+The project was born as Sportlab (FastAPI and Angular, in the `sportlab` repository). This repository is its new home: the Angular frontend is reused, and the backend moves to Orchard Core step by step, following the [migration plan](docs/orchard-migration-plan.md) and the [decision records](docs/decisions/).
+
+## Stack
+
+| Layer | Technology |
+| --- | --- |
+| Platform and API | Orchard Core 3.0 on .NET 10, custom modules |
+| Database | PostgreSQL with PostGIS (one database, tenants by table prefix) |
+| Frontend | Angular, TypeScript, Tailwind CSS (in the `sportlab` repository for now) |
+| Maps | MapLibre GL |
+| Access for Claude | MCP server (read-only at first) |
+| Containers and CI | Docker, GitHub Actions |
+
+## Roadmap
+
+| Phase | What | Status |
+| --- | --- | --- |
+| 0 | Orchard spike and decisions | done |
+| 1 | Repository skeleton, CI, production image | done |
+| 2 | Platform base: migrate step, roles, admin hostnames | done |
+| 3 | Authentication: Google, approval, roles, sessions | next |
+| 4 | Angular frontend on the new API | |
+| 5 | Garmin module: keys, sync, tracks, comparisons | |
+| 6 | Staging and production on the homelab | |
+| 7 | Cut-over from Sportlab, then blog and recipes | |
 
 ## Layout
 
