@@ -4,7 +4,7 @@ Zonedose is a multi-user web site for sports activities and health data. Each pe
 
 It is built for personal and family use on a homelab, and designed so that it can become a public site later.
 
-> Status: phase 3 of the [migration plan](docs/orchard-migration-plan.md) done: Google sign-in, account approval, server-side sessions and user administration, with the same API contract as Sportlab. Next: phase 4, the Angular frontend on this API.
+> Status: phase 4 of the [migration plan](docs/orchard-migration-plan.md) done: the Angular frontend (in the `sportlab` repository) runs on this backend, with Google sign-in, account approval, server-side sessions and user administration. Next: phase 5, the Garmin module.
 
 ## What it does
 
@@ -35,7 +35,7 @@ The project was born as Sportlab (FastAPI and Angular, in the `sportlab` reposit
 | --- | --- |
 | Platform and API | Orchard Core 3.0 on .NET 10, custom modules |
 | Database | PostgreSQL with PostGIS (one database, tenants by table prefix) |
-| Frontend | Angular, TypeScript, Tailwind CSS (in the `sportlab` repository for now) |
+| Frontend | Angular, TypeScript, Tailwind CSS (in the [`sportlab`](https://github.com/paologiachino/sportlab) repository for now) |
 | Maps | MapLibre GL |
 | Access for Claude | MCP server (read-only at first) |
 | Containers and CI | Docker, GitHub Actions |
@@ -48,8 +48,8 @@ The project was born as Sportlab (FastAPI and Angular, in the `sportlab` reposit
 | 1 | Repository skeleton, CI, production image | done |
 | 2 | Platform base: migrate step, roles, admin hostnames | done |
 | 3 | Authentication: Google, approval, roles, sessions | done |
-| 4 | Angular frontend on the new API | next |
-| 5 | Garmin module: keys, sync, tracks, comparisons | |
+| 4 | Angular frontend on the new API | done |
+| 5 | Garmin module: keys, sync, tracks, comparisons | next |
 | 6 | Staging and production on the homelab | |
 | 7 | Cut-over from Sportlab, then blog and recipes | |
 
@@ -112,6 +112,16 @@ docker compose up -d web
 ```
 
 Compose runs the `migrate` service first (setup and migrations with the migrator role), then `web` with the app role. The first start restores packages and compiles (a few minutes). Then `http://platform.localhost:8080/api/health` and `http://localhost:8080/api/health` answer `{"status":"ok",...}`. The admin of the sports site is at `http://admin.localhost:8080/Admin`, the platform's at `http://platform.localhost:8080/Admin`, with the user `setup-admin` and `ZONEDOSE_SETUP_ADMIN_PASSWORD`. After pulling changes that add migrations or features, run `docker compose up -d --force-recreate migrate web`.
+
+### With the frontend
+
+The Angular application lives in the `sportlab` repository for now. With Orchard running as above:
+
+```sh
+cd <sportlab>/frontend && npm ci && npm start
+```
+
+Open `http://localhost:4200`. Its development server forwards `/api` to Orchard on port 8080 and keeps the browser's host, so the session cookie and the Google redirect work as in production. Google sign-in needs `ZONEDOSE_GOOGLE_CLIENT_ID`, `ZONEDOSE_GOOGLE_CLIENT_SECRET` and `ZONEDOSE_ADMIN_EMAIL` in `.env` ([setup](docs/google-oauth.md)).
 
 Tests, style checks and the image build are described in [CLAUDE.md](CLAUDE.md#commands).
 

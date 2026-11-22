@@ -4,7 +4,7 @@ Working rules for Claude Code in this repository. The owner is Paolo, who valida
 
 ## Project
 
-Zonedose is a platform built on Orchard Core (headless) that hosts several sites as tenants. The first is the Zonedose sports site (formerly Sportlab, still in the `sportlab` repository until the cut-over); a blog and a recipes site come later. The migration plan is in `docs/orchard-migration-plan.md`, decisions in `docs/decisions/`. Current phase: phase 3 done (Google sign-in, approval, server-side sessions, user administration). Next: phase 4, the Angular frontend on this API.
+Zonedose is a platform built on Orchard Core (headless) that hosts several sites as tenants. The first is the Zonedose sports site (formerly Sportlab, still in the `sportlab` repository until the cut-over); a blog and a recipes site come later. The migration plan is in `docs/orchard-migration-plan.md`, decisions in `docs/decisions/`. Current phase: phase 4 done (the Angular frontend in the `sportlab` repository runs on this API; `frontend/proxy.conf.json` there points to port 8080). Next: phase 5, the Garmin module.
 
 `spike/` is the throwaway phase 0 spike: reference only, not built by CI, never extended.
 

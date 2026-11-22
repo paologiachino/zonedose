@@ -74,6 +74,8 @@ Reproduce, with tests, what Sportlab has today (gaps listed in the spike finding
 
 ### Phase 4: Angular adaptation
 
+Status: done (2026-11-22). The API kept Sportlab's contract, so the frontend changed only in its development proxy (to Orchard on port 8080, keeping the browser's host for the Google redirect) and one login message (`disabled`). Session service, interceptors, guards and the admin page are unchanged. Verified in the browser: no session, refresh, login page, error messages, redirect to Google with `http://localhost:4200/api/auth/google/callback`.
+
 - Point the session service, interceptors and guards at the new endpoints; admin users page on the new API.
 - Keep the frontend in the `sportlab` repository for now (rename to Zonedose there in phase 7); extract shared libraries (session, CSRF, API client) into a monorepo only when the second site needs them.
 
