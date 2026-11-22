@@ -60,6 +60,8 @@ Status: done (2026-11-21). Not yet in place: branch protection on `main` (a manu
 
 ### Phase 2: platform base
 
+Status: done in this repository (2026-11-22): migrate step, app role, admin hostnames, hostnames per environment. Database creation in `sportlab-postgres` and the backup are specified in [operations.md](operations.md) and applied with the infrastructure in phase 6.
+
 - Tenants: `zonedose` (one login per site, [decision 0001](decisions/0001-auth-model.md)); hostnames per environment.
 - PostgreSQL in `sportlab-postgres` with the agreed role model ([decision 0002](decisions/0002-database-role-model.md): table prefixes, separate migrate step); backup procedure extended to the Orchard databases.
 - Admin UI on a separate hostname.

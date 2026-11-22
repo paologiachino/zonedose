@@ -30,25 +30,22 @@ services:
       timeout: 5s
       retries: 30
 
-  web:
+  # The migrate step (decision 0002): with the migrator role it sets up new
+  # tenants, applies migrations and writes the configured hostnames, then exits.
+  # The web service starts only after it succeeded, as a deploy will.
+  migrate:
     image: mcr.microsoft.com/dotnet/sdk:10.0
     depends_on:
       db:
         condition: service_healthy
     working_dir: /src
-    command: ["dotnet", "watch", "run", "--project", "src/Zonedose.Web", "--urls", "http://0.0.0.0:8080", "--non-interactive"]
+    command: ["dotnet", "run", "--project", "src/Zonedose.Web", "--", "migrate"]
     environment:
-      ASPNETCORE_ENVIRONMENT: Development
       DOTNET_CLI_TELEMETRY_OPTOUT: "1"
-      DOTNET_USE_POLLING_FILE_WATCHER: "1"
       ORCHARD_APP_DATA: /app-data
-      # Phase 1: setup and running with the migrator role. Phase 2 adds the
-      # separate migrate step and runs the application with the app role.
-      ZONEDOSE_DB_CONNECTION: Host=db;Database=zonedose_dev;Username=zonedose_dev_migrator;Password=${ZONEDOSE_MIGRATOR_PASSWORD}
+      ZONEDOSE_DB_MIGRATION_CONNECTION: Host=db;Database=zonedose_dev;Username=zonedose_dev_migrator;Password=${ZONEDOSE_MIGRATOR_PASSWORD}
       ZONEDOSE_SETUP_ADMIN_PASSWORD: ${ZONEDOSE_SETUP_ADMIN_PASSWORD:?set ZONEDOSE_SETUP_ADMIN_PASSWORD in .env}
-    ports:
-      - "127.0.0.1:8080:8080"
-    volumes:
+    volumes: &dotnet-volumes
       - ./:/src
       - nuget:/root/.nuget/packages
       - appdata:/app-data
@@ -57,6 +54,24 @@ services:
       - web-obj:/src/src/Zonedose.Web/obj
       - platform-bin:/src/src/Modules/Zonedose.Platform/bin
       - platform-obj:/src/src/Modules/Zonedose.Platform/obj
+
+  # The application, with the app role (data only, no DDL)
+  web:
+    image: mcr.microsoft.com/dotnet/sdk:10.0
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    working_dir: /src
+    command: ["dotnet", "watch", "run", "--project", "src/Zonedose.Web", "--urls", "http://0.0.0.0:8080", "--non-interactive"]
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+      DOTNET_USE_POLLING_FILE_WATCHER: "1"
+      ORCHARD_APP_DATA: /app-data
+      ZONEDOSE_DB_CONNECTION: Host=db;Database=zonedose_dev;Username=zonedose_dev_app;Password=${ZONEDOSE_APP_PASSWORD}
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes: *dotnet-volumes
 
 volumes:
   pgdata:
