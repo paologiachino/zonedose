@@ -54,7 +54,13 @@ public sealed class GoogleSignIn(
             existing.Email = email;
             Account.SetDisplayName(existing, identity.DisplayName);
             Account.Set(existing, Account.LastLoginAt, now);
-            await userManager.UpdateAsync(existing);
+            var updated = await userManager.UpdateAsync(existing);
+            if (!updated.Succeeded)
+            {
+                // For example, the new address already belongs to another account
+                logger.LogWarning("User {UserId} could not be updated at sign-in", existing.UserId);
+                return (null, SignInOutcome.Refused);
+            }
             return (existing, SignInOutcome.SignedIn);
         }
 
@@ -69,6 +75,13 @@ public sealed class GoogleSignIn(
         Account.SetDisplayName(user, identity.DisplayName);
         Account.Set(user, Account.CreatedAt, now);
         Account.Set(user, Account.LastLoginAt, now);
+        // Login and role set before the user is created: one save, no update of
+        // the same user afterwards in the same transaction
+        user.LoginInfos.Add(new UserLoginInfo(Account.GoogleProvider, identity.Sub, Account.GoogleProvider));
+        if (isAdmin)
+        {
+            user.RoleNames.Add(Account.AdminRole);
+        }
 
         var errors = new List<string>();
         if (await userService.CreateUserAsync(user, null, (_, message) => errors.Add(message)) is not User created)
@@ -76,11 +89,6 @@ public sealed class GoogleSignIn(
             // Error texts may quote the email: log only that it failed
             logger.LogWarning("A new Google account could not be created ({Count} validation errors)", errors.Count);
             return (null, SignInOutcome.Refused);
-        }
-        await userManager.AddLoginAsync(created, new UserLoginInfo(Account.GoogleProvider, identity.Sub, Account.GoogleProvider));
-        if (isAdmin)
-        {
-            await userManager.AddToRoleAsync(created, Account.AdminRole);
         }
         logger.LogInformation("User {UserId} created as {Status}", created.UserId, Account.Status(created));
         return (created, SignInOutcome.SignedIn);

@@ -60,6 +60,7 @@ public sealed class AdminUsersTests(OrchardFixture orchard)
         // Approving again lets the person back in
         Assert.Equal(HttpStatusCode.OK, (await admin.PostAsync($"/api/admin/users/{id}/approve")).StatusCode);
         Assert.Equal("active", (await (await orchard.SignedInAsync(google)).MeAsync())!.Status);
+        AssertNoFailedUserUpdates();
     }
 
     [Fact]
@@ -79,7 +80,12 @@ public sealed class AdminUsersTests(OrchardFixture orchard)
 
         Assert.Equal(HttpStatusCode.OK, (await admin.PostAsync($"/api/admin/users/{id}/role", new { role = "user" })).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, (await user.GetAsync("/api/admin/users", Token)).StatusCode);
+        AssertNoFailedUserUpdates();
     }
+
+    /// <summary>Orchard logs a failed user update and carries on: the change would be lost silently.</summary>
+    private void AssertNoFailedUserUpdates() =>
+        Assert.DoesNotContain(orchard.Logs.Lines, line => line.Contains("Unexpected error while updating a user", StringComparison.Ordinal));
 
     [Fact]
     public async Task The_last_active_administrator_cannot_be_removed()
@@ -124,9 +130,15 @@ public sealed class AdminUsersTests(OrchardFixture orchard)
             second.PostAsync($"/api/admin/users/{adminId}/role", new { role = "user" }));
 
         Assert.Single(results, r => r.StatusCode == HttpStatusCode.OK);
-        var after = await admin.GetFromJsonAsync<AdminUser[]>("/api/admin/users?status=active", Token)
-            ?? await second.GetFromJsonAsync<AdminUser[]>("/api/admin/users?status=active", Token);
+        var stillAdmin = (await admin.MeAsync())!.Role == "admin" ? admin : second;
+        var after = await stillAdmin.GetFromJsonAsync<AdminUser[]>("/api/admin/users?status=active", Token);
         Assert.Single(after!, u => u.Role == "admin");
+
+        // Leave the ADMIN_EMAIL account an administrator for the other tests
+        if (stillAdmin != admin)
+        {
+            Assert.Equal(HttpStatusCode.OK, (await second.PostAsync($"/api/admin/users/{adminId}/role", new { role = "admin" })).StatusCode);
+        }
     }
 
     [Fact]

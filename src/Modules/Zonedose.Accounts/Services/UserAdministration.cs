@@ -65,9 +65,9 @@ public sealed class UserAdministration(
         }
         await GuardLastAdminAsync(user);
         Account.SetStatus(user, Account.Disabled);
-        await SaveAsync(user);
         // Orchard re-checks the security stamp of signed-in users; our sessions end at once
-        await userManager.UpdateSecurityStampAsync(user);
+        NewSecurityStamp(user);
+        await SaveAsync(user);
         await sessions.RemoveAllAsync(user.UserId);
         logger.LogInformation("User {UserId} disabled by {ActorId}", user.UserId, actor.UserId);
     });
@@ -89,16 +89,19 @@ public sealed class UserAdministration(
             {
                 throw new AdminActionException("only active users can become administrators");
             }
-            await userManager.AddToRoleAsync(user, Account.AdminRole);
+            user.RoleNames.Add(Account.AdminRole);
         }
         else
         {
             await GuardLastAdminAsync(user);
-            await userManager.RemoveFromRoleAsync(user, Account.AdminRole);
+            foreach (var name in user.RoleNames.Where(r => string.Equals(r, Account.AdminRole, StringComparison.OrdinalIgnoreCase)).ToArray())
+            {
+                user.RoleNames.Remove(name);
+            }
         }
         // Orchard's admin reads roles from the sign-in cookie: refresh it
-        await userManager.UpdateSecurityStampAsync(user);
-        await session.SaveChangesAsync();
+        NewSecurityStamp(user);
+        await SaveAsync(user);
         logger.LogInformation("User {UserId} set to {Role} by {ActorId}", user.UserId, role, actor.UserId);
     });
 
@@ -133,10 +136,20 @@ public sealed class UserAdministration(
         }
     }
 
+    /// <summary>
+    /// Every change is one update of the user, saved before the lock is
+    /// released: two updates of the same user in one YesSql session are refused.
+    /// </summary>
     private async Task SaveAsync(User user)
     {
-        await userManager.UpdateAsync(user);
+        var result = await userManager.UpdateAsync(user);
+        if (!result.Succeeded)
+        {
+            throw new InvalidOperationException($"User {user.UserId} could not be saved: " + string.Join(", ", result.Errors.Select(e => e.Code)));
+        }
         // Saved before the lock is released, not at the end of the request
         await session.SaveChangesAsync();
     }
+
+    private static void NewSecurityStamp(User user) => user.SecurityStamp = Guid.NewGuid().ToString("N");
 }
