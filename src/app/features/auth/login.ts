@@ -6,6 +6,8 @@ const ERROR_MESSAGES: Record<string, string> = {
   failed: 'Accesso non riuscito. Riprova.',
   unverified_email: 'L’indirizzo email del tuo account Google non è verificato.',
   unavailable: 'L’accesso non è disponibile in questo momento. Riprova più tardi.',
+  // The Zonedose backend refuses the sign-in of a disabled account
+  disabled: 'Il tuo account è stato disattivato. Contatta un amministratore.',
 };
 
 /** Sign-in page: one button that starts the Google sign-in. */

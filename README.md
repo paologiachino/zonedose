@@ -7,7 +7,7 @@ Status: frontend step 1 done: sign-in with Google, waiting pages for pending and
 ## Requirements
 
 - Node.js 26 (the version is in `.nvmrc`; with nvm, `nvm use` in this folder).
-- For pages that call the API: the backend running on `http://localhost:8000` (see [backend/README.md](../backend/README.md)).
+- For pages that call the API: the Zonedose backend (Orchard Core) running on `http://localhost:8080`, from the [zonedose](https://github.com/paologiachino/zonedose) repository (`docker compose up -d web` there). The FastAPI backend in `backend/` is paused during the migration (phase 4 of the Zonedose plan); to use it instead, point `proxy.conf.json` back to `http://localhost:8000`.
 
 ## Commands
 
@@ -32,9 +32,9 @@ npm run build           # production build in dist/sportlab
 
 ## Same address as the API
 
-`npm start` forwards every `/api/...` request to the backend on `http://localhost:8000` (`proxy.conf.json`). The browser sees one site, `http://localhost:4200`, so the backend's `SameSite=Strict` session cookies work without CORS. In staging and production the reverse proxy does the same job.
+`npm start` forwards every `/api/...` request to the Zonedose backend on `http://localhost:8080` (`proxy.conf.json`). The browser sees one site, `http://localhost:4200`, so the backend's `SameSite=Strict` session cookie works without CORS. In staging and production the reverse proxy does the same job.
 
-To sign in through the frontend, the backend must know that the browser uses `http://localhost:4200`: set `PUBLIC_URL=http://localhost:4200` in `.env` (or in the shell that starts the backend), and register `http://localhost:4200/api/auth/google/callback` in the development Google client. Google then sends the browser back to the Angular server, which forwards the callback to the backend.
+The proxy keeps the browser's `Host` header (`changeOrigin: false`): the backend builds the Google redirect URI from it, so Google sends the browser back to `http://localhost:4200/api/auth/google/callback`, which the proxy forwards to the backend. Register that URI in the development Google client and set the client in the zonedose `.env` (see `docs/google-oauth.md` in the zonedose repository).
 
 ## Structure
 

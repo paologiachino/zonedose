@@ -27,6 +27,7 @@ describe('Login', () => {
     ['failed', 'non riuscito'],
     ['unverified_email', 'non è verificato'],
     ['unavailable', 'non è disponibile'],
+    ['disabled', 'disattivato'],
     ['something-else', 'non riuscito'],
   ])('explains the error %s', async (code, text) => {
     expect((await render(code)).querySelector('[role=alert]')?.textContent).toContain(text);
