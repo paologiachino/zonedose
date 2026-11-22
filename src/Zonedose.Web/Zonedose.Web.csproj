@@ -4,6 +4,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../Modules/Zonedose.Platform/Zonedose.Platform.csproj" />
+    <ProjectReference Include="../Modules/Zonedose.Accounts/Zonedose.Accounts.csproj" />
   </ItemGroup>
   <ItemGroup>
     <!-- Orchard copies its translations here at build time -->

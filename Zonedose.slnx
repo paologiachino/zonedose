@@ -3,6 +3,7 @@
     <Project Path="src/Zonedose.Web/Zonedose.Web.csproj" />
   </Folder>
   <Folder Name="/src/Modules/">
+    <Project Path="src/Modules/Zonedose.Accounts/Zonedose.Accounts.csproj" />
     <Project Path="src/Modules/Zonedose.Platform/Zonedose.Platform.csproj" />
   </Folder>
   <Folder Name="/tests/">

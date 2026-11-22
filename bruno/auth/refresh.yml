@@ -1,0 +1,31 @@
+info:
+  name: Refresh
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/auth/refresh"
+  headers:
+    - name: X-Requested-With
+      value: XMLHttpRequest
+
+runtime:
+  assertions:
+    - expression: res.status
+      operator: neq
+      value: "500"
+
+settings:
+  encodeUrl: true
+
+docs: |-
+  Kept for the Angular refresh interceptor. The session renews itself on every
+  request (30 days sliding, 90 days at most), so nothing is rotated.
+
+  - `204`: the session is alive.
+  - `401`: the session ended (expired, logged out, account disabled); the
+    cookie is cleared.
+
+  State-changing requests need the `X-Requested-With` header (CSRF barrier),
+  otherwise `403`.

@@ -1,14 +1,22 @@
 using System.Net;
+using System.Text.Json.Nodes;
 using OrchardCore.Data.Migration;
 using OrchardCore.Environment.Shell;
 using OrchardCore.Environment.Shell.Scope;
+using OrchardCore.Modules;
 
 namespace Zonedose.Web;
 
 /// <summary>Outcome of the migrate step for one tenant.</summary>
-public sealed record TenantMigration(string Tenant, bool Running, bool HostsUpdated, IReadOnlyList<string> PendingFeatures)
+public sealed record TenantMigration(
+    string Tenant,
+    bool Running,
+    bool HostsUpdated,
+    IReadOnlyList<string> EnabledFeatures,
+    IReadOnlyList<string> MissingFeatures,
+    IReadOnlyList<string> PendingFeatures)
 {
-    public bool Ok => Running && PendingFeatures.Count == 0;
+    public bool Ok => Running && MissingFeatures.Count == 0 && PendingFeatures.Count == 0;
 }
 
 /// <summary>
@@ -21,6 +29,10 @@ public sealed record TenantMigration(string Tenant, bool Running, bool HostsUpda
 /// this environment written back, so hostnames are configuration too.</item>
 /// <item>Setup: new tenants are set up by AutoSetup on their first request, the
 /// Default tenant first (it also creates the others), as in production.</item>
+/// <item>Features: a setup recipe runs only when its tenant is created. Every
+/// feature its <c>feature</c> steps enable is enabled on existing tenants too, so
+/// a feature added to a recipe reaches every environment. Features are never
+/// disabled here: that stays an explicit decision.</item>
 /// <item>Migrations: activating a tenant runs its pending migrations; they are
 /// run once more explicitly, then nothing may be left pending.</item>
 /// </list>
@@ -62,16 +74,39 @@ public static class MigrationRunner
             await WarmUpAsync(client, tenant, logger, cancellationToken);
         }
 
+        var application = services.GetRequiredService<IApplicationContext>().Application;
         var results = new List<TenantMigration>();
         foreach (var tenant in tenants)
         {
             if (!shellHost.TryGetSettings(tenant.Name, out var settings) || !settings.IsRunning())
             {
-                results.Add(new TenantMigration(tenant.Name, false, hostsUpdated.Contains(tenant.Name), []));
+                results.Add(new TenantMigration(tenant.Name, false, hostsUpdated.Contains(tenant.Name), [], [], []));
                 continue;
             }
 
+            var wanted = RecipeFeatures(application, tenant.RecipeName);
+            IReadOnlyList<string> enabled = [];
+            IReadOnlyList<string> missing = [];
+            var featureScope = await shellHost.GetScopeAsync(settings);
+            await featureScope.UsingAsync(async shellScope =>
+            {
+                var features = shellScope.ServiceProvider.GetRequiredService<IShellFeaturesManager>();
+                var active = (await features.GetEnabledFeaturesAsync()).Select(f => f.Id).ToHashSet();
+                var toEnable = (await features.GetAvailableFeaturesAsync())
+                    .Where(f => wanted.Contains(f.Id) && !active.Contains(f.Id)).ToArray();
+                if (toEnable.Length > 0)
+                {
+                    logger.LogInformation("Tenant {Tenant}: enabling {Features}", tenant.Name, string.Join(", ", toEnable.Select(f => f.Id)));
+                    await features.EnableFeaturesAsync(toEnable, force: true);
+                }
+                enabled = [.. toEnable.Select(f => f.Id)];
+                var known = (await features.GetAvailableFeaturesAsync()).Select(f => f.Id).ToHashSet();
+                missing = [.. wanted.Where(id => !known.Contains(id)).Order()];
+            });
+
+            // A new scope: enabling features rebuilt the tenant, and its migrations run now
             IReadOnlyList<string> pending = [];
+            settings = shellHost.GetSettings(tenant.Name);
             var scope = await shellHost.GetScopeAsync(settings);
             await scope.UsingAsync(async shellScope =>
             {
@@ -79,9 +114,46 @@ public static class MigrationRunner
                 await migrations.UpdateAllFeaturesAsync();
                 pending = [.. await migrations.GetFeaturesThatNeedUpdateAsync()];
             });
-            results.Add(new TenantMigration(tenant.Name, true, hostsUpdated.Contains(tenant.Name), pending));
+            results.Add(new TenantMigration(tenant.Name, true, hostsUpdated.Contains(tenant.Name), enabled, missing, pending));
         }
         return results;
+    }
+
+    /// <summary>
+    /// The features a setup recipe enables, read from the recipe files the modules
+    /// ship (Recipes/*.recipe.json), independently of the tenant's own features.
+    /// </summary>
+    public static IReadOnlySet<string> RecipeFeatures(Application application, string recipeName)
+    {
+        foreach (var module in application.Modules)
+        {
+            foreach (var path in module.AssetPaths.Where(p => p.EndsWith(".recipe.json", StringComparison.OrdinalIgnoreCase)))
+            {
+                var relative = path[(path.IndexOf("/Recipes/", StringComparison.OrdinalIgnoreCase) + 1)..];
+                var file = module.GetFileInfo(relative);
+                if (!file.Exists)
+                {
+                    continue;
+                }
+                using var stream = file.CreateReadStream();
+                // Orchard's own recipes contain comments
+                var recipe = JsonNode.Parse(stream, documentOptions: new System.Text.Json.JsonDocumentOptions
+                {
+                    CommentHandling = System.Text.Json.JsonCommentHandling.Skip,
+                    AllowTrailingCommas = true,
+                });
+                if (!string.Equals(recipe?["name"]?.GetValue<string>(), recipeName, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+                return recipe!["steps"]!.AsArray()
+                    .Where(step => step?["name"]?.GetValue<string>() == "feature")
+                    .SelectMany(step => step!["enable"]?.AsArray() ?? [])
+                    .Select(id => id!.GetValue<string>())
+                    .ToHashSet(StringComparer.Ordinal);
+            }
+        }
+        throw new InvalidOperationException($"Setup recipe '{recipeName}' not found in any module.");
     }
 
     private static bool SameHosts(string current, string wanted)

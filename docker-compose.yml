@@ -54,6 +54,8 @@ services:
       - web-obj:/src/src/Zonedose.Web/obj
       - platform-bin:/src/src/Modules/Zonedose.Platform/bin
       - platform-obj:/src/src/Modules/Zonedose.Platform/obj
+      - accounts-bin:/src/src/Modules/Zonedose.Accounts/bin
+      - accounts-obj:/src/src/Modules/Zonedose.Accounts/obj
 
   # The application, with the app role (data only, no DDL)
   web:
@@ -69,6 +71,10 @@ services:
       DOTNET_USE_POLLING_FILE_WATCHER: "1"
       ORCHARD_APP_DATA: /app-data
       ZONEDOSE_DB_CONNECTION: Host=db;Database=zonedose_dev;Username=zonedose_dev_app;Password=${ZONEDOSE_APP_PASSWORD}
+      # Google sign-in (docs/google-oauth.md); empty: sign-in answers "unavailable"
+      ZONEDOSE_GOOGLE_CLIENT_ID: ${ZONEDOSE_GOOGLE_CLIENT_ID:-}
+      ZONEDOSE_GOOGLE_CLIENT_SECRET: ${ZONEDOSE_GOOGLE_CLIENT_SECRET:-}
+      ZONEDOSE_ADMIN_EMAIL: ${ZONEDOSE_ADMIN_EMAIL:-}
     ports:
       - "127.0.0.1:8080:8080"
     volumes: *dotnet-volumes
@@ -81,3 +87,5 @@ volumes:
   web-obj:
   platform-bin:
   platform-obj:
+  accounts-bin:
+  accounts-obj:

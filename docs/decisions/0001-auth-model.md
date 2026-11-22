@@ -1,6 +1,6 @@
 # 0001: Authentication model
 
-Status: accepted (phase 0, 2026-11-21)
+Status: accepted (phase 0, 2026-11-21); implementation details below added in phase 3 (2026-11-22)
 
 ## Context
 
@@ -23,3 +23,15 @@ Per-tenant ASP.NET Identity cookie, no identity tenant and no OpenID Connect ser
 - Running at work or publicly later does not change this: it is standard ASP.NET Identity with an external provider.
 
 Evidence: [spike results](../../spike/README.md), findings 1, 2 and 5 to 8.
+
+## Implementation (phase 3)
+
+What phase 3 built, and where it differs from Sportlab:
+
+- **Google** is registered by the `Zonedose.Accounts` module from configuration (`ZONEDOSE_GOOGLE_*`), not through Orchard's Google feature: no secret in the database, and the whole flow is ours. ASP.NET's Google handler runs the authorization code flow with PKCE and `state`; the redirect URI stays `/api/auth/google/callback`, as in Sportlab. A verified email is required; every failure ends on `/login?error=<code>`.
+- **Identity** is the Google `sub` (an Orchard external login). Orchard user names are generated (`user-…`), never the email, so no log line carries personal data (tested).
+- **Sessions are server-side.** The cookie holds a random key; the session is a row in a module-owned table, which stores only the key's SHA-256 hash. 30 days sliding and 90 days at most from the sign-in, as in Sportlab. Instead of a 15-minute access token, every request checks the session on the server and reads status and role from the database, so logout and disable take effect at once, a copied cookie included.
+- **Cookie**: `__Host-zonedose_session`, HttpOnly, Secure, `SameSite=Strict`, path `/` (development: `zonedose_session` without Secure). CSRF: `X-Requested-With` on every state-changing API request, as in Sportlab.
+- **Disabled accounts** are Orchard's `IsEnabled = false`: Orchard itself refuses them everywhere, the admin included. Unlike Sportlab, a disabled person cannot sign in to see an "access removed" page: the sign-in ends on `/login?error=disabled`, which the frontend shows (phase 4).
+- **The site host serves the API only.** Orchard's own pages (admin, local sign-in) answer only on the admin host, which is internal. There, the local `setup-admin` created by setup remains as the emergency account; Zonedose administrators manage users through the API.
+- **Last-admin guard**: administration changes run under Orchard's distributed lock and save before releasing it (in-process lock on the single homelab instance; several instances would need Redis).
