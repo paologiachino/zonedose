@@ -51,6 +51,7 @@ jobs:
       ZONEDOSE_APP_PASSWORD: ci_app
       ZONEDOSE_MIGRATOR_PASSWORD: ci_migrator
       ZONEDOSE_TEST_DB_CONNECTION: Host=localhost;Database=zonedose_dev;Username=zonedose_dev_migrator;Password=ci_migrator
+      ZONEDOSE_TEST_DB_APP_CONNECTION: Host=localhost;Database=zonedose_dev;Username=zonedose_dev_app;Password=ci_app
       DOTNET_CLI_TELEMETRY_OPTOUT: "1"
       DOTNET_NOLOGO: "1"
     steps:
@@ -118,11 +119,14 @@ jobs:
           docker cp docker/dev/postgres-init/20_zonedose.sh "$CONTAINER":/tmp/20_zonedose.sh
           docker exec -e ZONEDOSE_APP_PASSWORD -e ZONEDOSE_MIGRATOR_PASSWORD \
             -e POSTGRES_USER=postgres "$CONTAINER" sh /tmp/20_zonedose.sh
-      # The image joins the service container's network and reaches it as "postgres"
+      # The image joins the service container's network and reaches it as
+      # "postgres": migrate step, application with the app role, hostname change
       - name: Smoke test
+        env:
+          SMOKE_DB_HOST: postgres
+          SMOKE_DATABASE: zonedose_dev
         run: |
-          scripts/smoke-test-image.sh zonedose:ci "${{ job.services.postgres.network }}" \
-            "Host=postgres;Database=zonedose_dev;Username=zonedose_dev_migrator;Password=ci_migrator"
+          scripts/smoke-test-image.sh zonedose:ci "${{ job.services.postgres.network }}" "${{ job.services.postgres.id }}"
 
   secrets:
     name: Secret scan

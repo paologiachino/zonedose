@@ -4,7 +4,7 @@ Working rules for Claude Code in this repository. The owner is Paolo, who valida
 
 ## Project
 
-Zonedose is a platform built on Orchard Core (headless) that hosts several sites as tenants. The first is the Zonedose sports site (formerly Sportlab, still in the `sportlab` repository until the cut-over); a blog and a recipes site come later. The migration plan is in `docs/orchard-migration-plan.md`, decisions in `docs/decisions/`. Current phase: phase 1, repository skeleton. Next: phase 2, platform base (tenant hostnames, migrate step, app role).
+Zonedose is a platform built on Orchard Core (headless) that hosts several sites as tenants. The first is the Zonedose sports site (formerly Sportlab, still in the `sportlab` repository until the cut-over); a blog and a recipes site come later. The migration plan is in `docs/orchard-migration-plan.md`, decisions in `docs/decisions/`. Current phase: phase 2, platform base (migrate step, app role, admin hostnames). Next: phase 3, authentication parity with Sportlab.
 
 `spike/` is the throwaway phase 0 spike: reference only, not built by CI, never extended.
 
@@ -33,7 +33,8 @@ Zonedose is a platform built on Orchard Core (headless) that hosts several sites
 
 - Configuration as code: tenants come from `appsettings.json` and AutoSetup, features and settings from recipes in `src/Modules/*/Recipes`. No manual setup screens, no features enabled by hand outside development.
 - Content types can be modelled in the admin of a local instance, then exported with a deployment plan (definition steps only, never settings with secrets or users) into the tenant recipe.
-- Tenants use table prefixes, never schemas (decision 0002). Migrations run with the migrator role; the application role never needs DDL.
+- Tenants use table prefixes, never schemas (decision 0002). Migrations run only in the migrate step (`Zonedose.Web migrate`) with the migrator role; the application runs with the app role and never needs DDL. Release and backup procedures: `docs/operations.md`.
+- A tenant's admin answers only on its admin hostname (`ZONEDOSE_ADMIN_HOST_<TENANT>`).
 - Personal data never goes in content items: it lives in module-owned tables with `user_id` and Row-Level Security (decision 0002).
 
 ## Security and data rules
@@ -51,7 +52,8 @@ No .NET SDK is needed on the Mac: everything runs in the official SDK image.
 ```sh
 cp .env.example .env                 # once; replace every CHANGE_ME
 docker compose up -d --wait db       # development PostGIS
-docker compose up -d web             # Orchard on http://localhost:8080 (dotnet watch)
+docker compose up -d web             # migrate step, then Orchard with the app role on :8080
+docker compose up -d --force-recreate migrate web   # after changes with new migrations or features
 ```
 
 Build, style and tests in the SDK container (the tests need the database above):
@@ -59,6 +61,7 @@ Build, style and tests in the SDK container (the tests need the database above):
 ```sh
 docker run --rm --network zonedose-dev_default -v "$PWD":/src -w /src \
   -e "ZONEDOSE_TEST_DB_CONNECTION=Host=db;Database=zonedose_dev;Username=zonedose_dev_migrator;Password=<ZONEDOSE_MIGRATOR_PASSWORD>" \
+  -e "ZONEDOSE_TEST_DB_APP_CONNECTION=Host=db;Database=zonedose_dev;Username=zonedose_dev_app;Password=<ZONEDOSE_APP_PASSWORD>" \
   mcr.microsoft.com/dotnet/sdk:10.0 sh -c "dotnet format Zonedose.slnx --verify-no-changes && dotnet test --solution Zonedose.slnx"
 ```
 
@@ -66,10 +69,12 @@ Production image and its smoke test:
 
 ```sh
 docker build -t zonedose:dev .
-scripts/smoke-test-image.sh zonedose:dev zonedose-dev_default "Host=db;Database=<empty database>;Username=zonedose_dev_migrator;Password=<...>"
+SMOKE_DB_HOST=db SMOKE_DATABASE=<empty database prepared like zonedose_dev> \
+  ZONEDOSE_MIGRATOR_PASSWORD=<...> ZONEDOSE_APP_PASSWORD=<...> \
+  scripts/smoke-test-image.sh zonedose:dev zonedose-dev_default zonedose-dev-db-1
 ```
 
-Database tests are skipped locally without `ZONEDOSE_TEST_DB_CONNECTION` but always run in CI.
+Database tests are skipped locally without the two test connections but always run in CI.
 
 ## Licence
 

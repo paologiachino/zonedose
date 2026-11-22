@@ -14,6 +14,8 @@
   <ItemGroup Label="Orchard Core">
     <PackageVersion Include="OrchardCore.Application.Cms.Targets" Version="$(OrchardCoreVersion)" />
     <PackageVersion Include="OrchardCore.Module.Targets" Version="$(OrchardCoreVersion)" />
+    <PackageVersion Include="OrchardCore.Admin.Abstractions" Version="$(OrchardCoreVersion)" />
+    <PackageVersion Include="OrchardCore.Data.Abstractions" Version="$(OrchardCoreVersion)" />
   </ItemGroup>
 
   <ItemGroup Label="Pinned transitive packages (security fixes over Orchard Core 3.0.1)">
