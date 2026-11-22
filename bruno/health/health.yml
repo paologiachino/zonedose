@@ -1,0 +1,25 @@
+info:
+  name: Health
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/health"
+
+runtime:
+  assertions:
+    - expression: res.status
+      operator: eq
+      value: "200"
+
+settings:
+  encodeUrl: true
+
+docs: |-
+  Readiness of the tenant that answers on this host.
+
+  - `200 {"status": "ok", "tenant": "zonedose"}`: running, no migration pending.
+  - `503 {"status": "migrations-pending"}`: the migrate step did not run for
+    this version (`docker compose up -d --force-recreate migrate web`).
+  - `404`: the host matches no tenant.

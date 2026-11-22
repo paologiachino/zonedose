@@ -1,0 +1,171 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main, staging]
+  push:
+    branches: [main, staging]
+  # Weekly, so a vulnerability published after the last change still shows up
+  schedule:
+    - cron: "17 5 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  structure:
+    name: Structure check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Required files
+        run: |
+          for f in README.md LICENSE CLAUDE.md .env.example .gitignore; do
+            test -f "$f" || { echo "Missing $f"; exit 1; }
+          done
+      - name: No secrets file
+        run: |
+          if git ls-files | grep -E '(^|/)\.env$'; then
+            echo "A .env file is tracked in the repository"; exit 1
+          fi
+
+  dotnet:
+    name: Build and test
+    runs-on: ubuntu-latest
+    # Throwaway database for the tests, discarded with the job: the credentials
+    # below exist only inside this container and are not secrets.
+    services:
+      postgres:
+        image: postgis/postgis:17-3.7
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      ZONEDOSE_APP_PASSWORD: ci_app
+      ZONEDOSE_MIGRATOR_PASSWORD: ci_migrator
+      ZONEDOSE_TEST_DB_CONNECTION: Host=localhost;Database=zonedose_dev;Username=zonedose_dev_migrator;Password=ci_migrator
+      ZONEDOSE_TEST_DB_APP_CONNECTION: Host=localhost;Database=zonedose_dev;Username=zonedose_dev_app;Password=ci_app
+      DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+      DOTNET_NOLOGO: "1"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      # NuGet audit is on (Directory.Build.props): a vulnerable package,
+      # direct or transitive, fails the restore
+      - name: Restore (with dependency audit)
+        run: dotnet restore Zonedose.slnx
+      - name: Vulnerable packages
+        run: |
+          dotnet list Zonedose.slnx package --vulnerable --include-transitive | tee vulnerable.txt
+          if grep -q "has the following vulnerable packages" vulnerable.txt; then exit 1; fi
+      - name: Style check (dotnet format)
+        run: dotnet format Zonedose.slnx --verify-no-changes --no-restore
+      - name: Build
+        run: dotnet build Zonedose.slnx --no-restore -c Release
+      # Service containers start before the checkout, so the script cannot be
+      # mounted: it is copied in and run as the superuser, like Compose does.
+      - name: Database roles
+        env:
+          CONTAINER: ${{ job.services.postgres.id }}
+        run: |
+          docker cp docker/dev/postgres-init/20_zonedose.sh "$CONTAINER":/tmp/20_zonedose.sh
+          docker exec -e ZONEDOSE_APP_PASSWORD -e ZONEDOSE_MIGRATOR_PASSWORD \
+            -e POSTGRES_USER=postgres "$CONTAINER" sh /tmp/20_zonedose.sh
+      - name: Test
+        run: dotnet test --solution Zonedose.slnx --no-build -c Release
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          # Same Node.js version as local development
+          node-version-file: frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install
+        run: npm ci
+      - name: Dependency audit
+        run: npm audit --audit-level=high
+      - name: Style check (ESLint, Prettier)
+        run: npm run lint && npm run format:check
+      - name: Test
+        run: npm test -- --watch=false
+      - name: Build
+        run: npm run build
+
+  image:
+    name: Docker image
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgis/postgis:17-3.7
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      ZONEDOSE_APP_PASSWORD: ci_app
+      ZONEDOSE_MIGRATOR_PASSWORD: ci_migrator
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v4
+      - name: Build
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          load: true
+          push: false
+          tags: zonedose:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Database roles
+        env:
+          CONTAINER: ${{ job.services.postgres.id }}
+        run: |
+          docker cp docker/dev/postgres-init/20_zonedose.sh "$CONTAINER":/tmp/20_zonedose.sh
+          docker exec -e ZONEDOSE_APP_PASSWORD -e ZONEDOSE_MIGRATOR_PASSWORD \
+            -e POSTGRES_USER=postgres "$CONTAINER" sh /tmp/20_zonedose.sh
+      # The image joins the service container's network and reaches it as
+      # "postgres": migrate step, application with the app role, hostname change
+      - name: Smoke test
+        env:
+          SMOKE_DB_HOST: postgres
+          SMOKE_DATABASE: zonedose_dev
+        run: |
+          scripts/smoke-test-image.sh zonedose:ci "${{ job.services.postgres.network }}" "${{ job.services.postgres.id }}"
+
+  secrets:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      # The whole history, not only the pull request's commits: gitleaks-action
+      # scans from the parent of the first new commit and fails without scanning
+      # when that commit has no parent (the frontend history imported with
+      # git subtree starts with one). The repository is small, so this is quick.
+      - name: Gitleaks (whole history)
+        run: |
+          docker run --rm -v "$PWD":/repo \
+            -e GIT_CONFIG_COUNT=1 -e GIT_CONFIG_KEY_0=safe.directory -e GIT_CONFIG_VALUE_0=/repo \
+            ghcr.io/gitleaks/gitleaks:v8.24.3 git --redact --verbose /repo

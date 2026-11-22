@@ -2,7 +2,9 @@
 
 Status: phase 0 done (2026-11-21), decision: go. Results in [spike/README.md](../spike/README.md), decisions in [docs/decisions](decisions/).
 
-Naming: the sports site formerly called Sportlab is now **Zonedose** (name and available domain). In this plan "Zonedose" is the site and the platform; the existing repositories and containers (`sportlab`, `sportlab-infra`, `sportlab-postgres`) keep their names until phase 6/7.
+Naming: the sports site formerly called Sportlab is now **Zonedose** (name and available domain). In this plan "Zonedose" is the site and the platform.
+
+**Zonedose replaces Sportlab entirely** (owner's decision, 2026-11-22): the Angular frontend moved into this repository in phase 4 with its git history, nothing new goes into the `sportlab` repository, and it is archived (read-only) at the cut-over. The infrastructure names (`sportlab-infra`, `sportlab-postgres`) are renamed in phase 6.
 
 ## 1. Goal
 
@@ -52,11 +54,15 @@ Each phase ends with a pull request or a short decision record, in small steps, 
 
 ### Phase 1: `zonedose` repository skeleton
 
+Status: done (2026-11-21). Not yet in place: branch protection on `main` (a manual GitHub setting).
+
 - Orchard solution (.NET 10), Dockerfile, CI (build, tests, format, dependency and secret scan), `CLAUDE.md` with the same rules as the other repositories, AGPL-3.0.
 - Orchard configuration as code (recipes), no manual setup steps.
 - Content types: modelled in the admin of a local instance, exported with a deployment plan (definition steps only) and committed to the tenant recipe; staging and production get them only from the recipe (workflow verified in the spike).
 
 ### Phase 2: platform base
+
+Status: done in this repository (2026-11-22): migrate step, app role, admin hostnames, hostnames per environment. Database creation in `sportlab-postgres` and the backup are specified in [operations.md](operations.md) and applied with the infrastructure in phase 6.
 
 - Tenants: `zonedose` (one login per site, [decision 0001](decisions/0001-auth-model.md)); hostnames per environment.
 - PostgreSQL in `sportlab-postgres` with the agreed role model ([decision 0002](decisions/0002-database-role-model.md): table prefixes, separate migrate step); backup procedure extended to the Orchard databases.
@@ -64,12 +70,16 @@ Each phase ends with a pull request or a short decision record, in small steps, 
 
 ### Phase 3: authentication parity
 
+Status: done (2026-11-22). Details and the differences from Sportlab in [decision 0001](decisions/0001-auth-model.md#implementation-phase-3); API exploration with the [Bruno collection](../bruno/README.md).
+
 Reproduce, with tests, what Sportlab has today (gaps listed in the spike findings 5 to 8): Google-only sign-in, pending/active/disabled, roles, `ADMIN_EMAIL` only at creation, last-admin guard, CSRF protection, session lifetimes, no personal data in logs.
 
 ### Phase 4: Angular adaptation
 
+Status: done (2026-11-22). The API kept Sportlab's contract, so session service, interceptors, guards and admin page work unchanged. The frontend moved into `frontend/` with `git subtree` (history kept), renamed Zonedose; its development proxy points to Orchard on port 8080 keeping the browser's host (for the Google redirect), and the login page explains the new `disabled` error. CI builds, lints and tests it.
+
 - Point the session service, interceptors and guards at the new endpoints; admin users page on the new API.
-- Keep the frontend in the `sportlab` repository for now (rename to Zonedose there in phase 7); extract shared libraries (session, CSRF, API client) into a monorepo only when the second site needs them.
+- Move the frontend into this repository (`frontend/`) with its history, renamed Zonedose; extract shared libraries (session, CSRF, API client) only when the second site needs them.
 
 ### Phase 5: Garmin module (the original backend step 3)
 
@@ -82,7 +92,7 @@ Reproduce, with tests, what Sportlab has today (gaps listed in the spike finding
 
 ### Phase 7: cut-over and new sites
 
-- Parity checklist signed off on staging, then retire the FastAPI backend (keep its branch tagged for a while); rename the Sportlab repositories, containers and branding to Zonedose.
+- Parity checklist signed off on staging, then retire the FastAPI backend and archive the `sportlab` repository (read-only, kept for its history); rename the remaining Sportlab containers to Zonedose.
 - Blog and recipes as new tenants.
 
 ## 5. Order relative to the current roadmap

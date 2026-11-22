@@ -1,0 +1,32 @@
+info:
+  name: Disable
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/admin/users/:user_id/disable"
+  params:
+    - name: user_id
+      value: ""
+      type: path
+  headers:
+    - name: X-Requested-With
+      value: XMLHttpRequest
+
+runtime:
+  assertions:
+    - expression: res.status
+      operator: neq
+      value: "500"
+
+settings:
+  encodeUrl: true
+
+docs: |-
+  Pending or active -> disabled; every session of the user ends at once, and Google sign-in is refused until an administrator approves the account again.
+
+  Set `user_id` (Params tab) to an id from List users.
+  `404` unknown user, `409` not possible in the user's current state
+  (including removing the last active administrator), `401` not signed in,
+  `403` not an active administrator.

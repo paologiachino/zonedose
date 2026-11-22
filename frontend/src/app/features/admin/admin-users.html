@@ -1,0 +1,115 @@
+<main class="mx-auto flex max-w-5xl flex-col gap-4 p-6">
+  <h1 class="text-2xl font-semibold">Utenti</h1>
+
+  <nav aria-label="Filtro per stato" class="flex flex-wrap gap-2">
+    @for (filter of filters; track filter.label) {
+      <a
+        routerLink="/admin/users"
+        [queryParams]="{ status: filter.status }"
+        class="rounded-full border px-3 py-1 text-sm"
+        [class]="
+          currentFilter() === filter.status
+            ? 'border-slate-900 bg-slate-900 text-white'
+            : 'border-slate-300 hover:bg-slate-100'
+        "
+        [attr.aria-current]="currentFilter() === filter.status ? 'page' : null"
+      >
+        {{ filter.label }}
+      </a>
+    }
+  </nav>
+
+  @if (error(); as message) {
+    <p role="alert" class="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+      {{ message }}
+    </p>
+  }
+
+  @if (loading()) {
+    <p class="text-slate-500">Caricamento…</p>
+  } @else if (users().length === 0) {
+    <p class="text-slate-500">Nessun utente.</p>
+  } @else {
+    <ul class="divide-y divide-slate-200 rounded-md border border-slate-200 bg-white">
+      @for (user of users(); track user.id) {
+        <li class="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div class="min-w-0">
+            <p class="font-medium">
+              {{ displayName(user) }}
+              @if (user.id === myId()) {
+                <span class="text-sm font-normal text-slate-500">(tu)</span>
+              }
+            </p>
+            <p class="truncate text-sm text-slate-600">{{ user.email }}</p>
+            <p class="mt-1 flex flex-wrap gap-2 text-xs text-slate-500">
+              <span
+                class="rounded px-1.5 py-0.5"
+                [class]="
+                  user.status === 'active'
+                    ? 'bg-green-100 text-green-800'
+                    : user.status === 'pending'
+                      ? 'bg-amber-100 text-amber-800'
+                      : 'bg-slate-200 text-slate-700'
+                "
+                >{{ statusLabels[user.status] }}</span
+              >
+              @if (user.role === 'admin') {
+                <span class="rounded bg-indigo-100 px-1.5 py-0.5 text-indigo-800"
+                  >Amministratore</span
+                >
+              }
+              <span>Registrato il {{ user.created_at | date: 'mediumDate' }}</span>
+              @if (user.last_login_at) {
+                <span>· ultimo accesso {{ user.last_login_at | date: 'short' }}</span>
+              }
+            </p>
+          </div>
+
+          <div class="flex flex-wrap gap-2">
+            @if (user.status !== 'active') {
+              <button
+                type="button"
+                class="rounded-md bg-slate-900 px-3 py-1.5 text-sm text-white hover:bg-slate-700 disabled:opacity-50"
+                [disabled]="busyId() === user.id"
+                (click)="approve(user)"
+              >
+                {{ user.status === 'pending' ? 'Approva' : 'Riattiva' }}
+              </button>
+            }
+            @if (user.status === 'active') {
+              @if (user.role === 'admin') {
+                <button
+                  type="button"
+                  class="rounded-md border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-100 disabled:opacity-50"
+                  [disabled]="busyId() === user.id"
+                  (click)="removeAdmin(user)"
+                >
+                  Togli amministratore
+                </button>
+              } @else {
+                <button
+                  type="button"
+                  class="rounded-md border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-100 disabled:opacity-50"
+                  [disabled]="busyId() === user.id"
+                  (click)="makeAdmin(user)"
+                >
+                  Rendi amministratore
+                </button>
+              }
+            }
+            @if (user.status !== 'disabled') {
+              <button
+                type="button"
+                class="rounded-md border border-red-300 px-3 py-1.5 text-sm text-red-700 hover:bg-red-50 disabled:opacity-50"
+                [disabled]="busyId() === user.id"
+                (click)="disable(user)"
+              >
+                Disattiva
+              </button>
+            }
+          </div>
+        </li>
+      }
+    </ul>
+  }
+</main>

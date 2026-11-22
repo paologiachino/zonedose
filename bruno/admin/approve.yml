@@ -1,0 +1,32 @@
+info:
+  name: Approve
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/admin/users/:user_id/approve"
+  params:
+    - name: user_id
+      value: ""
+      type: path
+  headers:
+    - name: X-Requested-With
+      value: XMLHttpRequest
+
+runtime:
+  assertions:
+    - expression: res.status
+      operator: neq
+      value: "500"
+
+settings:
+  encodeUrl: true
+
+docs: |-
+  Pending or disabled -> active; records who approved and when.
+
+  Set `user_id` (Params tab) to an id from List users.
+  `404` unknown user, `409` not possible in the user's current state
+  (including removing the last active administrator), `401` not signed in,
+  `403` not an active administrator.

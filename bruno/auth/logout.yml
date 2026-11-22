@@ -1,0 +1,24 @@
+info:
+  name: Logout
+  type: http
+  seq: 4
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/auth/logout"
+  headers:
+    - name: X-Requested-With
+      value: XMLHttpRequest
+
+runtime:
+  assertions:
+    - expression: res.status
+      operator: eq
+      value: "204"
+
+settings:
+  encodeUrl: true
+
+docs: |-
+  Ends the session on the server and clears the cookie: a copy of the cookie
+  stops working too. `204` also when already signed out.

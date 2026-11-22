@@ -1,0 +1,8 @@
+<main class="mx-auto flex min-h-screen max-w-md flex-col justify-center gap-4 p-6">
+  <h1 class="text-2xl font-semibold">{{ message.title }}</h1>
+  <p class="text-slate-600">{{ message.text }}</p>
+  @if (email(); as email) {
+    <p class="text-sm text-slate-500">Hai effettuato l’accesso come {{ email }}.</p>
+  }
+  <div><app-logout-button /></div>
+</main>

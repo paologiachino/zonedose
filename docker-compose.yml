@@ -1,0 +1,91 @@
+# Development services. Not for staging or production: those will be defined
+# in the infrastructure repository (phase 6).
+#
+# Values come from the .env file next to this one (copy .env.example).
+# No .NET SDK is needed on the host: the web service builds and runs the
+# application inside the official SDK image.
+
+name: zonedose-dev
+
+services:
+  db:
+    # Same image as CI and the homelab. Published for amd64 only, so on Apple
+    # Silicon it runs under emulation: slower, but identical to production.
+    image: postgis/postgis:17-3.7
+    platform: linux/amd64
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      ZONEDOSE_APP_PASSWORD: ${ZONEDOSE_APP_PASSWORD:?set ZONEDOSE_APP_PASSWORD in .env}
+      ZONEDOSE_MIGRATOR_PASSWORD: ${ZONEDOSE_MIGRATOR_PASSWORD:?set ZONEDOSE_MIGRATOR_PASSWORD in .env}
+    ports:
+      # Bound to this machine only, never to the local network
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/dev/postgres-init/20_zonedose.sh:/docker-entrypoint-initdb.d/20_zonedose.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d zonedose_dev"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  # The migrate step (decision 0002): with the migrator role it sets up new
+  # tenants, applies migrations and writes the configured hostnames, then exits.
+  # The web service starts only after it succeeded, as a deploy will.
+  migrate:
+    image: mcr.microsoft.com/dotnet/sdk:10.0
+    depends_on:
+      db:
+        condition: service_healthy
+    working_dir: /src
+    command: ["dotnet", "run", "--project", "src/Zonedose.Web", "--", "migrate"]
+    environment:
+      DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+      ORCHARD_APP_DATA: /app-data
+      ZONEDOSE_DB_MIGRATION_CONNECTION: Host=db;Database=zonedose_dev;Username=zonedose_dev_migrator;Password=${ZONEDOSE_MIGRATOR_PASSWORD}
+      ZONEDOSE_SETUP_ADMIN_PASSWORD: ${ZONEDOSE_SETUP_ADMIN_PASSWORD:?set ZONEDOSE_SETUP_ADMIN_PASSWORD in .env}
+    volumes: &dotnet-volumes
+      - ./:/src
+      - nuget:/root/.nuget/packages
+      - appdata:/app-data
+      # Build output stays in the container, not in the working tree
+      - web-bin:/src/src/Zonedose.Web/bin
+      - web-obj:/src/src/Zonedose.Web/obj
+      - platform-bin:/src/src/Modules/Zonedose.Platform/bin
+      - platform-obj:/src/src/Modules/Zonedose.Platform/obj
+      - accounts-bin:/src/src/Modules/Zonedose.Accounts/bin
+      - accounts-obj:/src/src/Modules/Zonedose.Accounts/obj
+
+  # The application, with the app role (data only, no DDL)
+  web:
+    image: mcr.microsoft.com/dotnet/sdk:10.0
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    working_dir: /src
+    command: ["dotnet", "watch", "run", "--project", "src/Zonedose.Web", "--urls", "http://0.0.0.0:8080", "--non-interactive"]
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+      DOTNET_USE_POLLING_FILE_WATCHER: "1"
+      ORCHARD_APP_DATA: /app-data
+      ZONEDOSE_DB_CONNECTION: Host=db;Database=zonedose_dev;Username=zonedose_dev_app;Password=${ZONEDOSE_APP_PASSWORD}
+      # Google sign-in (docs/google-oauth.md); empty: sign-in answers "unavailable"
+      ZONEDOSE_GOOGLE_CLIENT_ID: ${ZONEDOSE_GOOGLE_CLIENT_ID:-}
+      ZONEDOSE_GOOGLE_CLIENT_SECRET: ${ZONEDOSE_GOOGLE_CLIENT_SECRET:-}
+      ZONEDOSE_ADMIN_EMAIL: ${ZONEDOSE_ADMIN_EMAIL:-}
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes: *dotnet-volumes
+
+volumes:
+  pgdata:
+  nuget:
+  appdata:
+  web-bin:
+  web-obj:
+  platform-bin:
+  platform-obj:
+  accounts-bin:
+  accounts-obj:

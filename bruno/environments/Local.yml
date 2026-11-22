@@ -1,0 +1,5 @@
+name: Local
+variables:
+  - name: baseUrl
+    value: http://localhost:8080
+    description: The zonedose tenant's site host in the development Compose (docker compose up -d web)
