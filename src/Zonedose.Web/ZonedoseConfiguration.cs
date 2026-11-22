@@ -1,7 +1,7 @@
 namespace Zonedose.Web;
 
 /// <summary>A tenant as configured for this environment: its site host and its admin host.</summary>
-public sealed record TenantLayout(string Name, string SiteHost, string AdminHost)
+public sealed record TenantLayout(string Name, string SiteHost, string AdminHost, string RecipeName)
 {
     /// <summary>Every host the tenant answers on, as Orchard's RequestUrlHost (comma separated).</summary>
     public string RequestUrlHost =>
@@ -20,6 +20,10 @@ public sealed record TenantLayout(string Name, string SiteHost, string AdminHost
 /// Orchard creates in each tenant at setup.</item>
 /// <item>ZONEDOSE_HOST_&lt;TENANT&gt; and ZONEDOSE_ADMIN_HOST_&lt;TENANT&gt;: the site
 /// and admin hostnames of a tenant in this environment (e.g. ZONEDOSE_HOST_ZONEDOSE).</item>
+/// <item>ZONEDOSE_GOOGLE_CLIENT_ID, ZONEDOSE_GOOGLE_CLIENT_SECRET: the Google OAuth
+/// client of this environment (docs/google-oauth.md).</item>
+/// <item>ZONEDOSE_ADMIN_EMAIL: the account created with this verified email is an
+/// active administrator (only at creation).</item>
 /// </list>
 ///
 /// Orchard never stores the connection string in App_Data when it comes from
@@ -57,7 +61,8 @@ public static class ZonedoseConfiguration
             {
                 throw new InvalidOperationException($"Tenant '{name}' needs a site host and an admin host.");
             }
-            var layout = new TenantLayout(name, siteHost, adminHost);
+            var recipe = tenant["RecipeName"] ?? throw new InvalidOperationException($"Tenant '{name}' needs a RecipeName.");
+            var layout = new TenantLayout(name, siteHost, adminHost, recipe);
             tenants.Add(layout);
 
             values[$"{tenant.Path}:DatabaseConnectionString"] = connection;
@@ -70,6 +75,11 @@ public static class ZonedoseConfiguration
                 values[$"{tenant.Path}:AdminPassword"] = setupPassword;
             }
         }
+        // Shared by every tenant (tenant configuration section Zonedose:Accounts)
+        values["OrchardCore:Zonedose:Accounts:GoogleClientId"] = configuration["ZONEDOSE_GOOGLE_CLIENT_ID"];
+        values["OrchardCore:Zonedose:Accounts:GoogleClientSecret"] = configuration["ZONEDOSE_GOOGLE_CLIENT_SECRET"];
+        values["OrchardCore:Zonedose:Accounts:AdminEmail"] = configuration["ZONEDOSE_ADMIN_EMAIL"];
+
         configuration.AddInMemoryCollection(values);
         return tenants;
     }

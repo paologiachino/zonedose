@@ -6,7 +6,9 @@
   "website": "https://github.com/paologiachino/zonedose",
   "version": "0.1.0",
   "issetuprecipe": true,
-  "categories": [ "zonedose" ],
+  "categories": [
+    "zonedose"
+  ],
   "tags": [],
   "steps": [
     {
@@ -29,7 +31,8 @@
         "OrchardCore.Lists",
         "OrchardCore.Media",
         "OrchardCore.Deployment",
-        "Zonedose.Platform"
+        "Zonedose.Platform",
+        "Zonedose.Accounts"
       ]
     },
     {

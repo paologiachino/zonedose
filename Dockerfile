@@ -6,6 +6,7 @@ WORKDIR /src
 COPY global.json Directory.Build.props Directory.Packages.props ./
 COPY src/Zonedose.Web/Zonedose.Web.csproj src/Zonedose.Web/
 COPY src/Modules/Zonedose.Platform/Zonedose.Platform.csproj src/Modules/Zonedose.Platform/
+COPY src/Modules/Zonedose.Accounts/Zonedose.Accounts.csproj src/Modules/Zonedose.Accounts/
 RUN dotnet restore src/Zonedose.Web/Zonedose.Web.csproj
 COPY src/ src/
 RUN dotnet publish src/Zonedose.Web/Zonedose.Web.csproj -c Release -o /app --no-restore

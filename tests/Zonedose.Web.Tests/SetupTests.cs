@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
 
 namespace Zonedose.Web.Tests;
@@ -20,8 +21,25 @@ public sealed class SetupTests(OrchardFixture orchard)
         Assert.All(orchard.Migration, m =>
         {
             Assert.True(m.Running, $"{m.Tenant} is not running");
+            Assert.Empty(m.MissingFeatures);
             Assert.Empty(m.PendingFeatures);
         });
+    }
+
+    [Fact]
+    public void Recipe_features_are_read_from_the_module_recipes()
+    {
+        Assert.SkipWhen(OrchardFixture.Skip, OrchardFixture.SkipReason);
+        var application = orchard.Factory.Services
+            .GetRequiredService<OrchardCore.Modules.IApplicationContext>().Application;
+
+        var site = MigrationRunner.RecipeFeatures(application, "Zonedose");
+        var host = MigrationRunner.RecipeFeatures(application, "ZonedoseHost");
+
+        Assert.Contains("Zonedose.Accounts", site);
+        Assert.Contains("OrchardCore.Users", site);
+        Assert.Contains("OrchardCore.Tenants", host);
+        Assert.DoesNotContain("Zonedose.Accounts", host);
     }
 
     [Theory]
@@ -49,15 +67,29 @@ public sealed class SetupTests(OrchardFixture orchard)
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
-    [Fact]
-    public async Task Admin_is_not_reachable_on_the_site_host()
+    [Theory]
+    [InlineData("/Admin")]
+    [InlineData("/admin/ContentTypes/List")]
+    [InlineData("/Login")]
+    [InlineData("/Register")]
+    [InlineData("/")]
+    public async Task Site_host_serves_the_api_only(string path)
     {
         Assert.SkipWhen(OrchardFixture.Skip, OrchardFixture.SkipReason);
 
         using var site = orchard.ClientFor(OrchardFixture.SiteHost);
 
-        Assert.Equal(HttpStatusCode.NotFound, (await site.GetAsync("/Admin", Token)).StatusCode);
-        Assert.Equal(HttpStatusCode.NotFound, (await site.GetAsync("/admin/ContentTypes/List", Token)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await site.GetAsync(path, Token)).StatusCode);
+    }
+
+    [Fact]
+    public async Task Local_sign_in_page_is_on_the_admin_host()
+    {
+        Assert.SkipWhen(OrchardFixture.Skip, OrchardFixture.SkipReason);
+
+        using var admin = orchard.ClientFor(OrchardFixture.AdminHost);
+
+        Assert.Equal(HttpStatusCode.OK, (await admin.GetAsync("/Login", Token)).StatusCode);
     }
 
     [Theory]

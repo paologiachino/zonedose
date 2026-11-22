@@ -1,0 +1,37 @@
+info:
+  name: Set role
+  type: http
+  seq: 4
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/admin/users/:user_id/role"
+  params:
+    - name: user_id
+      value: ""
+      type: path
+  headers:
+    - name: X-Requested-With
+      value: XMLHttpRequest
+  body:
+    type: json
+    data: |-
+      {
+        "role": "admin"
+      }
+
+runtime:
+  assertions:
+    - expression: res.status
+      operator: neq
+      value: "500"
+
+settings:
+  encodeUrl: true
+
+docs: |-
+  Promote (`"admin"`, active users only) or demote (`"user"`).
+
+  Set `user_id` (Params tab) to an id from List users.
+  `404` unknown user; `409` already in that role, not active, or the last
+  active administrator; `401` not signed in, `403` not an active administrator.

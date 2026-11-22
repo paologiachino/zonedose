@@ -4,7 +4,7 @@ Working rules for Claude Code in this repository. The owner is Paolo, who valida
 
 ## Project
 
-Zonedose is a platform built on Orchard Core (headless) that hosts several sites as tenants. The first is the Zonedose sports site (formerly Sportlab, still in the `sportlab` repository until the cut-over); a blog and a recipes site come later. The migration plan is in `docs/orchard-migration-plan.md`, decisions in `docs/decisions/`. Current phase: phase 2, platform base (migrate step, app role, admin hostnames). Next: phase 3, authentication parity with Sportlab.
+Zonedose is a platform built on Orchard Core (headless) that hosts several sites as tenants. The first is the Zonedose sports site (formerly Sportlab, still in the `sportlab` repository until the cut-over); a blog and a recipes site come later. The migration plan is in `docs/orchard-migration-plan.md`, decisions in `docs/decisions/`. Current phase: phase 3 done (Google sign-in, approval, server-side sessions, user administration). Next: phase 4, the Angular frontend on this API.
 
 `spike/` is the throwaway phase 0 spike: reference only, not built by CI, never extended.
 
@@ -31,10 +31,11 @@ Zonedose is a platform built on Orchard Core (headless) that hosts several sites
 
 ## Orchard rules
 
-- Configuration as code: tenants come from `appsettings.json` and AutoSetup, features and settings from recipes in `src/Modules/*/Recipes`. No manual setup screens, no features enabled by hand outside development.
+- Configuration as code: tenants come from `appsettings.json` and AutoSetup, features and settings from recipes in `src/Modules/*/Recipes`. No manual setup screens, no features enabled by hand outside development. A feature added to a setup recipe reaches existing tenants through the migrate step (enable only; disabling a feature is an explicit decision).
 - Content types can be modelled in the admin of a local instance, then exported with a deployment plan (definition steps only, never settings with secrets or users) into the tenant recipe.
 - Tenants use table prefixes, never schemas (decision 0002). Migrations run only in the migrate step (`Zonedose.Web migrate`) with the migrator role; the application runs with the app role and never needs DDL. Release and backup procedures: `docs/operations.md`.
-- A tenant's admin answers only on its admin hostname (`ZONEDOSE_ADMIN_HOST_<TENANT>`).
+- A tenant's site host serves `/api` only; Orchard's pages (admin, local sign-in) answer only on its admin hostname (`ZONEDOSE_ADMIN_HOST_<TENANT>`).
+- Every API endpoint has a request in `bruno/`; `BrunoCollectionTests` fails otherwise. Tests never call Google: they use `FakeGoogle`.
 - Personal data never goes in content items: it lives in module-owned tables with `user_id` and Row-Level Security (decision 0002).
 
 ## Security and data rules

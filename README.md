@@ -4,7 +4,7 @@ Zonedose is a multi-user web site for sports activities and health data. Each pe
 
 It is built for personal and family use on a homelab, and designed so that it can become a public site later.
 
-> Status: phase 2 of the [migration plan](docs/orchard-migration-plan.md), platform base: tenants from configuration and recipes, a separate migrate step with the migrator role, the application on the data-only app role, and each tenant's admin on its own hostname. Authentication arrives in phase 3.
+> Status: phase 3 of the [migration plan](docs/orchard-migration-plan.md) done: Google sign-in, account approval, server-side sessions and user administration, with the same API contract as Sportlab. Next: phase 4, the Angular frontend on this API.
 
 ## What it does
 
@@ -47,8 +47,8 @@ The project was born as Sportlab (FastAPI and Angular, in the `sportlab` reposit
 | 0 | Orchard spike and decisions | done |
 | 1 | Repository skeleton, CI, production image | done |
 | 2 | Platform base: migrate step, roles, admin hostnames | done |
-| 3 | Authentication: Google, approval, roles, sessions | next |
-| 4 | Angular frontend on the new API | |
+| 3 | Authentication: Google, approval, roles, sessions | done |
+| 4 | Angular frontend on the new API | next |
 | 5 | Garmin module: keys, sync, tracks, comparisons | |
 | 6 | Staging and production on the homelab | |
 | 7 | Cut-over from Sportlab, then blog and recipes | |
@@ -58,7 +58,9 @@ The project was born as Sportlab (FastAPI and Angular, in the `sportlab` reposit
 | Path | What |
 | --- | --- |
 | `src/Zonedose.Web` | Orchard host. Tenant layout in `appsettings.json`; secrets and hostnames from `ZONEDOSE_*` variables. |
-| `src/Modules/Zonedose.Platform` | Shared module: `/api/health` and the setup recipes (`zonedose-host`, `zonedose`). |
+| `src/Modules/Zonedose.Platform` | Shared module: `/api/health`, CSRF check, API-only site hosts, and the setup recipes (`zonedose-host`, `zonedose`). |
+| `src/Modules/Zonedose.Accounts` | Google sign-in, account approval, server-side sessions, `/api/auth/*` and `/api/admin/users`. |
+| `bruno/` | API requests for [Bruno](https://www.usebruno.com/), kept in sync with the code by a test. |
 | `tests/Zonedose.Web.Tests` | Integration tests: the real application set up against PostgreSQL. |
 | `docker/dev/postgres-init` | Development database and its migrator/app roles. |
 | `Dockerfile`, `scripts/smoke-test-image.sh` | Production image (non-root) and its smoke test. |
@@ -74,9 +76,22 @@ The project was born as Sportlab (FastAPI and Angular, in the `sportlab` reposit
 
 Hostnames per environment come from `ZONEDOSE_HOST_<TENANT>` and `ZONEDOSE_ADMIN_HOST_<TENANT>`. A tenant's admin answers only on its admin host; a host that matches no tenant gets 404.
 
+## Sign-in and API
+
+People sign in with Google only ([setup](docs/google-oauth.md)). A new account is pending until an administrator approves it; the account with the verified email `ZONEDOSE_ADMIN_EMAIL` is created as an active administrator. The API keeps Sportlab's contract, so the Angular frontend works unchanged:
+
+| Endpoint | What |
+| --- | --- |
+| `GET /api/auth/google/login` | start the Google sign-in (browser) |
+| `GET /api/auth/me` | the signed-in user |
+| `POST /api/auth/refresh`, `POST /api/auth/logout` | session |
+| `GET /api/admin/users`, `POST /api/admin/users/{id}/approve`, `/disable`, `/role` | user administration |
+
+Sessions live on the server (30 days sliding, 90 at most); the cookie is HttpOnly and `SameSite=Strict`, and state-changing requests need `X-Requested-With`. The site host answers only under `/api`. Every endpoint has a request in the [Bruno collection](bruno/README.md).
+
 ## Migrate step and roles
 
-The application never changes the database schema. Before each release, `Zonedose.Web migrate` runs once with the migrator role: it sets up new tenants, applies pending migrations, writes the configured hostnames, and exits with an error if anything is left pending. The application then runs with the data-only app role, and `/api/health` answers `503 migrations-pending` if a migration was skipped. Database, release and backup requirements for each environment are in [docs/operations.md](docs/operations.md).
+The application never changes the database schema. Before each release, `Zonedose.Web migrate` runs once with the migrator role: it sets up new tenants, enables on existing tenants any feature their setup recipe lists (a recipe otherwise runs only when the tenant is created), applies pending migrations, writes the configured hostnames, and exits with an error if anything is left pending. The application then runs with the data-only app role, and `/api/health` answers `503 migrations-pending` if a migration was skipped. Database, release and backup requirements for each environment are in [docs/operations.md](docs/operations.md).
 
 ## Development
 

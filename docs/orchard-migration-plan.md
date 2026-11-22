@@ -68,6 +68,8 @@ Status: done in this repository (2026-11-22): migrate step, app role, admin host
 
 ### Phase 3: authentication parity
 
+Status: done (2026-11-22). Details and the differences from Sportlab in [decision 0001](decisions/0001-auth-model.md#implementation-phase-3); API exploration with the [Bruno collection](../bruno/README.md).
+
 Reproduce, with tests, what Sportlab has today (gaps listed in the spike findings 5 to 8): Google-only sign-in, pending/active/disabled, roles, `ADMIN_EMAIL` only at creation, last-admin guard, CSRF protection, session lifetimes, no personal data in logs.
 
 ### Phase 4: Angular adaptation

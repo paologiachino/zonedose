@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using OrchardCore.Environment.Shell;
 using Zonedose.Web;
 
@@ -12,6 +13,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Secrets and hostnames come from ZONEDOSE_* environment variables
 var tenants = ZonedoseConfiguration.Apply(builder.Configuration, migrate);
 builder.Services.AddSingleton(tenants);
+builder.Services.TryAddSingleton(TimeProvider.System);
 
 // AutoSetup must be available before a tenant exists: every tenant is set up
 // from configuration and recipes, never through the setup screens
@@ -56,8 +58,9 @@ var results = await MigrationRunner.RunAsync(
 foreach (var result in results)
 {
     logger.LogInformation(
-        "Tenant {Tenant}: running={Running}, hosts updated={Hosts}, pending migrations=[{Pending}]",
-        result.Tenant, result.Running, result.HostsUpdated, string.Join(", ", result.PendingFeatures));
+        "Tenant {Tenant}: running={Running}, hosts updated={Hosts}, features enabled=[{Enabled}], unknown recipe features=[{Missing}], pending migrations=[{Pending}]",
+        result.Tenant, result.Running, result.HostsUpdated, string.Join(", ", result.EnabledFeatures),
+        string.Join(", ", result.MissingFeatures), string.Join(", ", result.PendingFeatures));
 }
 await app.StopAsync();
 

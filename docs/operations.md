@@ -23,6 +23,8 @@ The SQL is the one in `docker/dev/postgres-init/20_zonedose.sh` with the environ
 | `ZONEDOSE_DB_CONNECTION` | application | app role connection string |
 | `ZONEDOSE_HOST_<TENANT>` | both | site hostname of a tenant (`DEFAULT`, `ZONEDOSE`) |
 | `ZONEDOSE_ADMIN_HOST_<TENANT>` | both | admin hostname of a tenant |
+| `ZONEDOSE_GOOGLE_CLIENT_ID`, `ZONEDOSE_GOOGLE_CLIENT_SECRET` | application | Google OAuth client of the environment ([google-oauth.md](google-oauth.md)) |
+| `ZONEDOSE_ADMIN_EMAIL` | application | the Google account created with this verified email is an active administrator |
 
 Both containers must get the same hostnames. The admin of a tenant answers only on its admin hostname (404 elsewhere); the `Default` tenant is the platform administration, so its site and admin host are the same. The admin hostnames should be routed only on the internal network (LAN or Tailscale), never through the public tunnel.
 
@@ -31,7 +33,7 @@ The App_Data volume (`/app-data` in the image) is mounted by both containers.
 ## Release procedure
 
 1. Production only: back up (below) before anything else.
-2. Run the new image once with `migrate` and the migrator connection. It sets up any new tenant, applies every pending migration, writes the configured hostnames into App_Data, and exits with 0. Any other exit code stops the release: the running version is untouched.
+2. Run the new image once with `migrate` and the migrator connection. It sets up any new tenant, enables on existing tenants the features their setup recipe lists, applies every pending migration, writes the configured hostnames into App_Data, and exits with 0. Any other exit code stops the release: the running version is untouched.
 3. Replace the application container with the new image, app role connection.
 4. Check `GET /api/health` on every site host: `200 {"status":"ok"}`. A `503 migrations-pending` means step 2 did not run for this version; roll back.
 
