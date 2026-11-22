@@ -11,7 +11,7 @@ RUN dotnet restore src/Zonedose.Web/Zonedose.Web.csproj
 COPY src/ src/
 RUN dotnet publish src/Zonedose.Web/Zonedose.Web.csproj -c Release -o /app --no-restore
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0
+FROM mcr.microsoft.com/dotnet/aspnet:11.0
 WORKDIR /app
 COPY --from=build /app .
 # Tenant settings and per-tenant data protection keys live in App_Data:
