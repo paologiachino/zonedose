@@ -1,9 +1,11 @@
+# Updates go to staging first, like every other change (feature -> staging -> main).
 version: 2
 updates:
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
       interval: monthly
+    target-branch: staging
 
   # Orchard Core and the pinned transitive packages (Directory.Packages.props).
   # Orchard packages move together, so they arrive in one pull request; majors
@@ -12,6 +14,7 @@ updates:
     directory: "/"
     schedule:
       interval: monthly
+    target-branch: staging
     groups:
       orchard-core:
         patterns:
@@ -24,3 +27,4 @@ updates:
     directory: "/"
     schedule:
       interval: monthly
+    target-branch: staging

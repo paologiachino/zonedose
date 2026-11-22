@@ -16,7 +16,7 @@ Zonedose is a platform built on Orchard Core (headless) that hosts several sites
 
 ## Working method
 
-1. Always work on a branch (`feature/...`, `fix/...`, `chore/...`), never directly on `main`.
+1. Always work on a branch (`feature/...`, `fix/...`, `chore/...`), never directly on `main` or `staging`. Pull requests go to `staging`; when it works, `staging` is merged into `main` with a new pull request. Both branches are protected by rulesets (required checks; `main` also needs an approval).
 2. Small steps: one function or module at a time, with tests, then a pull request.
 3. Briefly explain every non-obvious choice (Orchard features, recipes, migrations, module structure) so Paolo can validate it and learn.
 4. Do not call a piece of work finished without running tests and style checks. If you cannot run them, say so.

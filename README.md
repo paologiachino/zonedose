@@ -51,6 +51,10 @@ Tests, style checks and the image build are described in [CLAUDE.md](CLAUDE.md#c
 
 Every pull request runs: structure check, NuGet dependency audit (a vulnerable package fails the restore), `dotnet format`, build with warnings as errors, integration tests against PostGIS, the Docker image build with a smoke test, and a gitleaks secret scan. The same checks run weekly to catch newly published vulnerabilities.
 
+## Branches
+
+Work happens on `feature/...`, `fix/...` or `chore/...` branches and reaches `staging` through a pull request; `staging` reaches `main` through another pull request. Both are protected by GitHub rulesets: the four CI checks must pass, `main` also needs an approval, and force pushes and deletion are blocked. Deploys from these branches arrive in phase 6.
+
 ## Licence
 
 [AGPL-3.0](LICENSE).

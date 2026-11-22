@@ -2,9 +2,9 @@ name: CI
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, staging]
   push:
-    branches: [main]
+    branches: [main, staging]
   # Weekly, so a vulnerability published after the last change still shows up
   schedule:
     - cron: "17 5 * * 1"
