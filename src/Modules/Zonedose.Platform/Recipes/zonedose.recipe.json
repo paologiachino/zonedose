@@ -1,0 +1,41 @@
+{
+  "name": "Zonedose",
+  "displayName": "Zonedose",
+  "description": "The Zonedose sports site: users, roles, editorial content and the platform module.",
+  "author": "Zonedose",
+  "website": "https://github.com/paologiachino/zonedose",
+  "version": "0.1.0",
+  "issetuprecipe": true,
+  "categories": [ "zonedose" ],
+  "tags": [],
+  "steps": [
+    {
+      "name": "feature",
+      "enable": [
+        "OrchardCore.Settings",
+        "OrchardCore.Admin",
+        "OrchardCore.Navigation",
+        "OrchardCore.Themes",
+        "TheAdmin",
+        "SafeMode",
+        "OrchardCore.Users",
+        "OrchardCore.Roles",
+        "OrchardCore.Contents",
+        "OrchardCore.ContentTypes",
+        "OrchardCore.ContentFields",
+        "OrchardCore.Title",
+        "OrchardCore.Html",
+        "OrchardCore.Markdown",
+        "OrchardCore.Lists",
+        "OrchardCore.Media",
+        "OrchardCore.Deployment",
+        "Zonedose.Platform"
+      ]
+    },
+    {
+      "name": "themes",
+      "admin": "TheAdmin",
+      "site": "SafeMode"
+    }
+  ]
+}

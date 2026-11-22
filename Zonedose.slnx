@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Zonedose.Web/Zonedose.Web.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/">
+    <Project Path="src/Modules/Zonedose.Platform/Zonedose.Platform.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Zonedose.Web.Tests/Zonedose.Web.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,17 @@
+# Secrets and local data
+.env
+App_Data/
+
+# Build output
+bin/
+obj/
+TestResults/
+# Orchard copies its translations into the host at build time
+src/Zonedose.Web/Localization/
+
+# Editors and OS
+.vs/
+.vscode/
+.idea/
+*.user
+.DS_Store

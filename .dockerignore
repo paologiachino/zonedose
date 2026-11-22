@@ -1,0 +1,12 @@
+**/bin
+**/obj
+**/App_Data
+**/Localization
+**/TestResults
+.git
+.github
+.env
+spike
+scripts
+docs
+tests
