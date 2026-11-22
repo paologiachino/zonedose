@@ -83,6 +83,31 @@ jobs:
       - name: Test
         run: dotnet test --solution Zonedose.slnx --no-build -c Release
 
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          # Same Node.js version as local development
+          node-version-file: frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install
+        run: npm ci
+      - name: Dependency audit
+        run: npm audit --audit-level=high
+      - name: Style check (ESLint, Prettier)
+        run: npm run lint && npm run format:check
+      - name: Test
+        run: npm test -- --watch=false
+      - name: Build
+        run: npm run build
+
   image:
     name: Docker image
     runs-on: ubuntu-latest
@@ -131,14 +156,16 @@ jobs:
   secrets:
     name: Secret scan
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      # Needed by gitleaks to read the commits of the pull request
-      pull-requests: read
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: gitleaks/gitleaks-action@v3
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # The whole history, not only the pull request's commits: gitleaks-action
+      # scans from the parent of the first new commit and fails without scanning
+      # when that commit has no parent (the frontend history imported with
+      # git subtree starts with one). The repository is small, so this is quick.
+      - name: Gitleaks (whole history)
+        run: |
+          docker run --rm -v "$PWD":/repo \
+            -e GIT_CONFIG_COUNT=1 -e GIT_CONFIG_KEY_0=safe.directory -e GIT_CONFIG_VALUE_0=/repo \
+            ghcr.io/gitleaks/gitleaks:v8.24.3 git --redact --verbose /repo

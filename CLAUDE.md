@@ -4,14 +4,14 @@ Working rules for Claude Code in this repository. The owner is Paolo, who valida
 
 ## Project
 
-Zonedose is a platform built on Orchard Core (headless) that hosts several sites as tenants. The first is the Zonedose sports site (formerly Sportlab, still in the `sportlab` repository until the cut-over); a blog and a recipes site come later. The migration plan is in `docs/orchard-migration-plan.md`, decisions in `docs/decisions/`. Current phase: phase 3 done (Google sign-in, approval, server-side sessions, user administration). Next: phase 4, the Angular frontend on this API.
+Zonedose is a platform built on Orchard Core (headless) that hosts several sites as tenants. The first is the Zonedose sports site. Zonedose replaces Sportlab entirely: the Angular frontend moved here (`frontend/`, with its history), the backend is rebuilt on Orchard Core, and the `sportlab` repository is archived at the cut-over (phase 7); no new work goes there. A blog and a recipes site come later. The migration plan is in `docs/orchard-migration-plan.md`, decisions in `docs/decisions/`. Current phase: phase 4 done (the Angular frontend moved into `frontend/` and runs on this API). Next: phase 5, the Garmin module.
 
 `spike/` is the throwaway phase 0 spike: reference only, not built by CI, never extended.
 
 ## Stack (confirmed)
 
 - Orchard Core 3.0 on .NET 10, PostgreSQL with PostGIS (one database, tenants by table prefix).
-- Frontend: the Angular application in the `sportlab` repository, unchanged for now (phase 4).
+- Frontend: Angular, TypeScript, Tailwind CSS, in `frontend/` (its own README).
 - Containers: Docker, deployed on the homelab from phase 6.
 
 ## Working method
@@ -27,6 +27,7 @@ Zonedose is a platform built on Orchard Core (headless) that hosts several sites
 - Chat with Paolo is in Italian. Code, identifiers, workflows, comments, documentation, commit messages and pull request descriptions are in English.
 - Commit messages in English with a prefix: `feat:`, `fix:`, `chore:`, `docs:`, `test:`.
 - C#: `dotnet format` with `.editorconfig`; warnings are errors; nullable enabled.
+- TypeScript: ESLint and Prettier (`npm run lint`, `npm run format:check` in `frontend/`); unit tests with Vitest, never calling the backend.
 - Package versions only in `Directory.Packages.props`. A vulnerable package (direct or transitive) fails the restore: raise it there with a comment naming the advisory.
 
 ## Orchard rules
@@ -64,6 +65,17 @@ docker run --rm --network zonedose-dev_default -v "$PWD":/src -w /src \
   -e "ZONEDOSE_TEST_DB_CONNECTION=Host=db;Database=zonedose_dev;Username=zonedose_dev_migrator;Password=<ZONEDOSE_MIGRATOR_PASSWORD>" \
   -e "ZONEDOSE_TEST_DB_APP_CONNECTION=Host=db;Database=zonedose_dev;Username=zonedose_dev_app;Password=<ZONEDOSE_APP_PASSWORD>" \
   mcr.microsoft.com/dotnet/sdk:10.0 sh -c "dotnet format Zonedose.slnx --verify-no-changes && dotnet test --solution Zonedose.slnx"
+```
+
+Frontend (Node.js from `frontend/.nvmrc`), with Orchard running:
+
+```sh
+cd frontend
+npm ci
+npm start                            # http://localhost:4200, /api forwarded to Orchard on :8080
+npm run lint && npm run format:check
+npm test -- --watch=false
+npm run build
 ```
 
 Production image and its smoke test:
